@@ -89,10 +89,9 @@ public class RegistrationIntentService extends IntentService {
     // [START subscribe_topics]
     private void subscribeTopics(String token) throws IOException {
         GcmPubSub pubSub = GcmPubSub.getInstance(this);
-        for (String topic : TOPICS) {
-            pubSub.subscribe(token, "/topics/" + topic, null);
-            Log.d(TAG,"Subscribed to topic: " + "/topics/" + topic);
-        }
+        pubSub.subscribe(token, "/topics/" + TOPICS[0], null);
+        Log.d(TAG, "Subscribed to topic: " + "/topics/" + TOPICS[0]);
+        
     }
     // [END subscribe_topics]
 

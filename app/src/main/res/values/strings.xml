@@ -12,5 +12,9 @@
     <string name="messages">nuovi messaggi</string>
     <string name="message">nuovo messaggio</string>
     <string name="notifications_title">PIG</string>
+    <string name="notifications_settings">Gestione Notifiche</string>
+    <string name="ok">ok</string>
+    <string name="cancel">cancella</string>
+
 
 </resources>

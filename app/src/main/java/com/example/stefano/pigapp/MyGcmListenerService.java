@@ -6,6 +6,8 @@ import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -44,6 +46,44 @@ public class MyGcmListenerService extends GcmListenerService {
 
     };
 
+    public boolean interestingTopic(Bundle data){
+        try {
+            JSONObject notification=new JSONObject(""+data.get("notification"));
+            String category=notification.getString("category");
+            int notificationTopic=-1;
+            switch(category){
+                case("biblio"):{
+                    notificationTopic=1;
+                    break;
+                }
+                case("tess"):{
+                    notificationTopic=2;
+                    break;
+                }
+                case("info"):{
+                    notificationTopic=3;
+                    break;
+                }
+            }
+
+        int defaultValue = -1;
+        int topicsSubscriptions = PreferenceManager.
+                getDefaultSharedPreferences(this).getInt("topics", defaultValue);
+            if(topicsSubscriptions==0){
+                return false;
+            }
+            if(topicsSubscriptions==notificationTopic || notificationTopic==3){
+                return true;
+            }
+            return false;
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+
     /**
      * Called when message is received.
      *
@@ -54,6 +94,11 @@ public class MyGcmListenerService extends GcmListenerService {
     // [START receive_message]
     @Override
     public void onMessageReceived(String from, Bundle data) {
+
+        if(!interestingTopic(data)){
+            return;
+        }
+
         SharedPreferences mPrefs = mContext.getSharedPreferences("myAppPrefs", Context.MODE_PRIVATE);
         int defaultValue = -1;
         int numberOfActualNotifications = mPrefs.getInt("notifications", defaultValue);
@@ -66,9 +111,29 @@ public class MyGcmListenerService extends GcmListenerService {
             notifications=new JSONArray();
         }*/
         Log.d(TAG, ""+data.get("notification"));
-        try {
-            JSONObject notification=new JSONObject(""+data.get("notification"));
+        JSONArray pastNotifications;
 
+        try {
+            String notifications = PreferenceManager.
+                    getDefaultSharedPreferences(this).getString("pastNotifications", "");
+            JSONObject jo;
+
+            if(notifications!= null && !notifications.equals(""))
+            {
+                Log.d(TAG, "NON vuota -> "+notifications);
+                pastNotifications=new JSONArray(notifications);
+
+            }
+            else{
+                Log.d(TAG,"vuota iu ga");
+                pastNotifications=new JSONArray();
+            }
+
+            JSONObject notification=new JSONObject(""+data.get("notification"));
+            pastNotifications.put(notification);
+
+            PreferenceManager.getDefaultSharedPreferences(this).edit()
+                    .putString("pastNotifications",pastNotifications.toString()).apply();
 
             //notifications.put(data.get("notification"));
        /* String text="";
@@ -87,16 +152,15 @@ public class MyGcmListenerService extends GcmListenerService {
             Intent resultIntent = new Intent(MyGcmListenerService.this, NotificationActivity.class);
             resultIntent.putExtra("messages", notification.toString());
 
-
             android.support.v4.app.NotificationCompat.Builder mBuilder =
                     new android.support.v7.app.NotificationCompat.Builder(MyGcmListenerService.this)
                             .setSmallIcon(R.drawable.ic_stat_ic_notification)
                             .setContentTitle(getString(R.string.notifications_title))
                             .setAutoCancel(true)
                             .setGroup(GROUP_KEY_NOTIFICATIONS)
-                            .setContentText(notification.getString("title"));
-
-
+                            .setContentText(notification.getString("title"))
+                            .setVibrate(new long[] { 1000, 1000, 1000, 1000, 1000 })
+                            .setLights(Color.GREEN, 3000, 3000);
 
 
 // The stack builder object will contain an artificial backs stack for the
@@ -123,6 +187,13 @@ public class MyGcmListenerService extends GcmListenerService {
 
             Log.d(TAG, "NotifID: " + nId);
             mNotificationManager.notify(nId, mBuilder.build());
+            try {
+                Uri not = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+                Ringtone ring = RingtoneManager.getRingtone(getApplicationContext(), not);
+                ring.play();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
         } catch (JSONException e) {
             e.printStackTrace();
