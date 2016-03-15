@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.media.Ringtone;
@@ -37,6 +38,7 @@ import android.view.ViewGroup;
 
 import android.widget.AdapterView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -112,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
+        mViewPager.setOffscreenPageLimit(2);
 
         /*ProgressDialog progress = new ProgressDialog(this);
         progress.setTitle("Caricamento");
@@ -158,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
         String urlProposte="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=eventi&filter[posts_per_page]=3";
         String urlNews="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=notizie-pig&filter[posts_per_page]=3";
 
-        new RetrieveFeedTask().execute(urlProposte);
+        new RetrieveFeedTask().execute(urlProposte,urlNews);
 
 
     }
@@ -407,7 +410,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void setContent(String[] excerpt_strings, Drawable[] images, final String[] links){
-            CustomListAdapter adapter=new CustomListAdapter(getActivity(), excerpt_strings, images);
+            CustomListAdapter adapter=new CustomListAdapter(getActivity(), excerpt_strings, images, false);
             ListView list=(ListView)rootView.findViewById(R.id.proposteList);
             list.setAdapter(adapter);
 
@@ -476,6 +479,7 @@ public class MainActivity extends AppCompatActivity {
         private ProgressBar mRegistrationProgressBar;
         private TextView mInformationTextView;
         String content="";
+        View rootView;
         /**
          * The fragment argument representing the section number for this
          * fragment.
@@ -488,11 +492,31 @@ public class MainActivity extends AppCompatActivity {
             this.setArguments(args);
         }
 
+        public void setContent(String[] excerpt_strings, Drawable[] images, final String[] links){
+            CustomListAdapter adapter=new CustomListAdapter(getActivity(), excerpt_strings, images, false);
+            ListView list=(ListView)rootView.findViewById(R.id.newsList);
+            list.setAdapter(adapter);
+
+            list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view,
+                                        int position, long id) {
+                    // TODO Auto-generated method stub
+                    String Slecteditem = links[+position];
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Slecteditem));
+                    startActivity(browserIntent);
+                    //Toast.makeText(mContext, Slecteditem, Toast.LENGTH_SHORT).show();
+
+                }
+            });
+        }
+
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_news, container, false);
+            rootView = inflater.inflate(R.layout.fragment_news, container, false);
             TextView titleView = (TextView) rootView.findViewById(R.id.news_title);
             titleView.setTypeface(myFontTitle);
             /*TextView textView = (TextView) rootView.findViewById(R.id.news_content);
@@ -501,14 +525,40 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public static JSONArray retrievePastNotifications(){
+        JSONArray pastNotifications;
+        String notifications = PreferenceManager.
+                getDefaultSharedPreferences(mContext).getString("pastNotifications", "");
+        JSONObject jo;
+
+        if(notifications!= null && !notifications.equals(""))
+        {
+            Log.d(TAG, "NON vuota -> "+notifications);
+            try {
+                pastNotifications=new JSONArray(notifications);
+            } catch (JSONException e) {
+                pastNotifications=new JSONArray();
+                e.printStackTrace();
+            }
+
+        }
+        else{
+            Log.d(TAG,"vuota iu ga");
+            pastNotifications=new JSONArray();
+        }
+        return pastNotifications;
+    }
+
     /**
      * A fragment containing the news
      */
     public static class NotificationsFragment extends Fragment {
 
         private BroadcastReceiver mRegistrationBroadcastReceiver;
-        private ProgressBar mRegistrationProgressBar;
-        private TextView mInformationTextView;
+        View rootView;
+        boolean opened[];
+        Drawable background;
+
         /**
          * The fragment argument representing the section number for this
          * fragment.
@@ -521,13 +571,85 @@ public class MainActivity extends AppCompatActivity {
             this.setArguments(args);
         }
 
+        public void setContent(){
+           JSONArray pastNotifications= retrievePastNotifications();
+            int num=pastNotifications.length();
+            if(num==0){
+                return;
+            }
+            Log.d(TAG, "NOTIFICATIONS: "+pastNotifications.toString());
+            final String titles[]=new String[num];
+            final String contents[]=new String[num];
+            Drawable icons[]=new Drawable[num];
+            opened=new boolean[num];
+
+
+
+            int i;
+            for(i=0;i<num;i++){
+                opened[i]=false;
+            }
+            for(i=0;i<num;i++){
+                try {
+                    JSONObject jo=pastNotifications.getJSONObject(i);
+                    Log.d(TAG, "ELEM: i-"+i+" json: "+jo.toString());
+                    titles[num-1-i]=jo.getString("title");
+                    contents[num-1-i]=jo.getString("text");
+                    String category=jo.getString("category");
+                    switch(category){
+                        case "biblio":{icons[num-1-i]=getResources().getDrawable( R.drawable.ic_book_open_page_variant_light, mContext.getTheme()); break;}
+                        case "tess":{icons[num-1-i]=getResources().getDrawable( R.drawable.ic_people_black_24dp, mContext.getTheme()); break;}
+                        case "info": {icons[num-1-i
+                                ]=getResources().getDrawable( R.drawable.ic_info_outline_black_24dp, mContext.getTheme()); break;}
+                        default: break;
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            for(i=0;i<pastNotifications.length();i++){
+                Log.d(TAG, "i: "+titles[i]);
+            }
+
+            CustomListAdapter adapter=new CustomListAdapter(getActivity(), titles, icons, true);
+            ListView list=(ListView)rootView.findViewById(R.id.notificationsList);
+            list.setAdapter(adapter);
+
+            list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view,
+                                        int position, long id) {
+                    LinearLayout wrapper = (LinearLayout) view;
+                    final TextView txtDescription = (TextView) wrapper.getChildAt(1);
+
+                    if (opened[position]) {
+                        txtDescription.setText(titles[position]);
+                        opened[position]=false;
+                        wrapper.setBackgroundColor(0);
+                        txtDescription.setTextSize(20);
+
+                    } else {
+                        txtDescription.setText(contents[position]);
+                        opened[position]=true;
+                        wrapper.setBackgroundColor(Color.parseColor("#B5D5EE"));
+                        txtDescription.setTextSize(15);
+                    }
+
+                }
+            });
+
+        }
+
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_notifications, container, false);
+            rootView = inflater.inflate(R.layout.fragment_notifications, container, false);
             TextView titleView = (TextView) rootView.findViewById(R.id.notifications_title);
             titleView.setTypeface(myFontTitle);
+            setContent();
             return rootView;
         }
     }
@@ -583,9 +705,9 @@ public class MainActivity extends AppCompatActivity {
         String[] proposte_excerpt_strings={null,null,null};
         Drawable[] proposte_images={null,null,null};
 
-        String[] eventi_links={null,null,null};
-        String[] eventi_excerpt_strings={null,null,null};
-        Drawable[] eventi_images={null,null,null};
+        String[] news_links={null,null,null};
+        String[] news_excerpt_strings={null,null,null};
+        Drawable[] news_images={null,null,null};
 
         public Drawable LoadImage(String url) {
             try {
@@ -603,7 +725,7 @@ public class MainActivity extends AppCompatActivity {
         protected void onPreExecute() {
             super.onPreExecute();
             dialog = new ProgressDialog(MainActivity.this);
-            dialog.setMessage("Loading....");
+            dialog.setMessage("Caricamento....");
             dialog.show();
         }
 
@@ -628,7 +750,7 @@ public class MainActivity extends AppCompatActivity {
                             proposte_links[i]=link;
                             }
                             else{
-                                eventi_links[i]=link;
+                                news_links[i]=link;
                             }
 
                             JSONObject excerpt = jo.getJSONObject("excerpt");
@@ -639,7 +761,7 @@ public class MainActivity extends AppCompatActivity {
                                 proposte_excerpt_strings[i]=excerpt_string;
                             }
                             else{
-                                eventi_excerpt_strings[i]=excerpt_string;
+                                news_excerpt_strings[i]=excerpt_string;
                             }
 
 
@@ -655,7 +777,7 @@ public class MainActivity extends AppCompatActivity {
                                     proposte_images[i]=LoadImage(linkHref);
                                 }
                                 else{
-                                    eventi_images[i]=LoadImage(linkHref);;
+                                    news_images[i]=LoadImage(linkHref);;
                                 }
                             }
 
@@ -673,7 +795,7 @@ public class MainActivity extends AppCompatActivity {
             int i;
 
             populate(true,params[0]);
-            //populate(false,params[0]);
+            populate(false,params[1]);
 
             // Return the data from specified url
             return null;
@@ -684,6 +806,7 @@ public class MainActivity extends AppCompatActivity {
                 //proposte.setText(excerpt_string);
                 //proposte.setImage(d);
             proposte.setContent(proposte_excerpt_strings, proposte_images, proposte_links);
+            news.setContent(news_excerpt_strings, news_images, news_links);
 
                 dialog.dismiss();
                 dialog.cancel();
