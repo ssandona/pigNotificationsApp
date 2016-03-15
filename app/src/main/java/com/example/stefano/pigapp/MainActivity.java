@@ -2,15 +2,19 @@ package com.example.stefano.pigapp;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -23,6 +27,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
+import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -30,12 +35,33 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.widget.AdapterView;
+import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -45,7 +71,14 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver mRegistrationBroadcastReceiver;
     ArrayList mSelectedItems;
     boolean changed=false;
-    private Context mContext;
+    private static Context mContext;
+    ProposteFragment proposte;
+    NewsFragment news;
+    NotificationsFragment notifiche;
+
+    private static Typeface myFontTitle;
+
+    //http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=eventi&filter[posts_per_page]=2
 
 
     /**
@@ -70,6 +103,8 @@ public class MainActivity extends AppCompatActivity {
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        myFontTitle=Typeface.createFromAsset(getAssets(), "fonts/PlayfairDisplay-Bold.ttf");
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
@@ -78,15 +113,13 @@ public class MainActivity extends AppCompatActivity {
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
 
+        /*ProgressDialog progress = new ProgressDialog(this);
+        progress.setTitle("Caricamento");
+        progress.setMessage("Attendi...");
+        progress.show();*/
+// To dismiss the dialog
+        //progress.dismiss();
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
 
         mRegistrationBroadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -122,6 +155,10 @@ public class MainActivity extends AppCompatActivity {
                 launchDialog(true);
             }
         }
+        String urlProposte="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=eventi&filter[posts_per_page]=3";
+        String urlNews="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=notizie-pig&filter[posts_per_page]=3";
+
+        new RetrieveFeedTask().execute(urlProposte);
 
 
     }
@@ -138,6 +175,56 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mRegistrationBroadcastReceiver);
         super.onPause();
     }
+
+    private void parseRSS(String result){
+        //parse JSON data
+        try {
+            int i;
+            JSONArray jArray = new JSONArray(result);
+            for(i=0; i < jArray.length(); i++) {
+
+                JSONObject jObject = jArray.getJSONObject(i);
+
+                String name = jObject.getString("name");
+                String tab1_text = jObject.getString("tab1_text");
+                int active = jObject.getInt("active");
+
+            } // End Loop
+        } catch (JSONException e) {
+            Log.e("JSONException", "Error: " + e.toString());
+        }
+    }
+
+    /*private static String retrieveRSS(String url_string){
+            String result="";
+            try {
+                URL url = new URL(url_string);
+                URLConnection urlConnection = url.openConnection();
+                urlConnection.setConnectTimeout(1000);
+                InputStream inputStream= urlConnection.getInputStream();
+                // Convert response to string using String Builder
+                try {
+                    BufferedReader bReader = new BufferedReader(new InputStreamReader(inputStream, "utf-8"), 8);
+                    StringBuilder sBuilder = new StringBuilder();
+
+                    String line = null;
+                    while ((line = bReader.readLine()) != null) {
+                        sBuilder.append(line + "\n");
+                    }
+
+                    inputStream.close();
+                    result = sBuilder.toString();
+                    Log.d(TAG,"RETRIEVE: "+result);
+
+                } catch (Exception e) {
+                    Log.d(TAG,"RETRIEVE: errore");
+                }
+            } catch (Exception ex) {
+                Log.d(TAG,"RETRIEVE ERROR: "+ex.toString());
+                return null;
+            }
+        return result;
+    }*/
 
     /**
      * Check the device to make sure it has the Google Play Services APK. If
@@ -289,38 +376,70 @@ public class MainActivity extends AppCompatActivity {
     /**
      * A placeholder fragment containing a simple view.
      */
-    public static class PlaceholderFragment extends Fragment {
+    public static class ProposteFragment extends Fragment {
 
         private BroadcastReceiver mRegistrationBroadcastReceiver;
         private ProgressBar mRegistrationProgressBar;
         private TextView mInformationTextView;
+        String content="";
+        View rootView;
         /**
          * The fragment argument representing the section number for this
          * fragment.
          */
         private static final String ARG_SECTION_NUMBER = "section_number";
 
-        public PlaceholderFragment() {
-        }
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
+        public ProposteFragment(int sectionNumber) {
             Bundle args = new Bundle();
             args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
+
+            this.setArguments(args);
+        }
+
+        public void setText(String text) {
+            /*TextView t = (TextView) getView().findViewById(R.id.proposte_content);  //UPDATE
+            t.setText(Html.fromHtml(text));*/
+        }
+
+        public void setImage(Drawable d){
+            /*ImageView img=(ImageView)rootView.findViewById((R.id.proposteImage));
+            img.setImageDrawable(d);*/
+        }
+
+        public void setContent(final String[] excerpt_strings, Drawable[] images){
+            CustomListAdapter adapter=new CustomListAdapter(getActivity(), excerpt_strings, images);
+            ListView list=(ListView)rootView.findViewById(R.id.proposteList);
+            list.setAdapter(adapter);
+
+            list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view,
+                                        int position, long id) {
+                    // TODO Auto-generated method stub
+                    String Slecteditem = excerpt_strings[+position];
+                    Toast.makeText(mContext, Slecteditem, Toast.LENGTH_SHORT).show();
+
+                }
+            });
         }
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-            textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
+            rootView = inflater.inflate(R.layout.fragment_main, container, false);
+
+            /*TextView textView = (TextView) rootView.findViewById(R.id.proposte_content);
+            textView.setText(content);*/
+            TextView titleView = (TextView) rootView.findViewById(R.id.proposte_title);
+            titleView.setTypeface(myFontTitle);
+
+
+
+
+            /*Spanned result = Html.fromHtml(formattedText);
+            view.setText(result);*/
+
 
             //mRegistrationProgressBar = (ProgressBar) rootView.findViewById(R.id.registrationProgressBar);
             mRegistrationBroadcastReceiver = new BroadcastReceiver() {
@@ -347,6 +466,71 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * A fragment containing the news
+     */
+    public static class NewsFragment extends Fragment {
+
+        private BroadcastReceiver mRegistrationBroadcastReceiver;
+        private ProgressBar mRegistrationProgressBar;
+        private TextView mInformationTextView;
+        String content="";
+        /**
+         * The fragment argument representing the section number for this
+         * fragment.
+         */
+        private static final String ARG_SECTION_NUMBER = "section_number";
+
+        public NewsFragment(int sectionNumber) {
+            Bundle args = new Bundle();
+            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
+            this.setArguments(args);
+        }
+
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
+            View rootView = inflater.inflate(R.layout.fragment_news, container, false);
+            TextView titleView = (TextView) rootView.findViewById(R.id.news_title);
+            titleView.setTypeface(myFontTitle);
+            /*TextView textView = (TextView) rootView.findViewById(R.id.news_content);
+            textView.setText(content);*/
+            return rootView;
+        }
+    }
+
+    /**
+     * A fragment containing the news
+     */
+    public static class NotificationsFragment extends Fragment {
+
+        private BroadcastReceiver mRegistrationBroadcastReceiver;
+        private ProgressBar mRegistrationProgressBar;
+        private TextView mInformationTextView;
+        /**
+         * The fragment argument representing the section number for this
+         * fragment.
+         */
+        private static final String ARG_SECTION_NUMBER = "section_number";
+
+        public NotificationsFragment(int sectionNumber) {
+            Bundle args = new Bundle();
+            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
+            this.setArguments(args);
+        }
+
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                                 Bundle savedInstanceState) {
+            View rootView = inflater.inflate(R.layout.fragment_notifications, container, false);
+            TextView titleView = (TextView) rootView.findViewById(R.id.notifications_title);
+            titleView.setTypeface(myFontTitle);
+            return rootView;
+        }
+    }
+
+    /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
      */
@@ -358,9 +542,13 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1);
+
+            switch(position)
+            {
+                case 0: {proposte= new ProposteFragment(0);return proposte;}
+                case 1: {news= new NewsFragment(1);return news;}
+                default : {notifiche=new NotificationsFragment(2);return notifiche;}
+            }
         }
 
         @Override
@@ -382,4 +570,127 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
     }
+
+
+
+
+
+    public class RetrieveFeedTask extends AsyncTask<String, Void, String> {
+        ProgressDialog dialog;
+        String excerpt_string=null;
+        String[] excerpt_strings={null,null,null};
+        Drawable[] images={null,null,null};
+
+        public Drawable LoadImage(String url) {
+            try {
+                InputStream is = (InputStream) new URL(url).getContent();
+                Drawable d = Drawable.createFromStream(is, "src name");
+                Log.d(TAG,"CARICATA");
+                return d;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            dialog = new ProgressDialog(MainActivity.this);
+            dialog.setMessage("Loading....");
+            dialog.show();
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            String stream = null;
+            int i;
+            /*proposte*/
+            String urlString = params[0];
+
+            HTTPDataHandler hh = new HTTPDataHandler();
+            stream = hh.GetHTTPData(urlString);
+                if (stream != null) {
+                    try {
+                        Log.d(TAG, "RESULT: " + stream);
+                        // Get the full HTTP Data as JSONObject
+                        JSONArray feed = new JSONArray(stream);
+                        Log.d(TAG, "RESULT: OK");
+
+                        for(i=0;i<3;i++) {
+                            /*retrieve post excerpt*/
+
+                            JSONObject jo = (JSONObject) feed.get(i);
+                            JSONObject excerpt = jo.getJSONObject("excerpt");
+                            Log.d(TAG, "RESULT: " + excerpt.toString());
+                            excerpt_string = excerpt.getString("rendered");
+                            Log.d(TAG, "RESULT: " + excerpt_string);
+                            excerpt_strings[i]=excerpt_string;
+
+
+                            /*retrieve post image*/
+                            JSONObject content = jo.getJSONObject("content");
+                            String rendered = content.getString("rendered");
+                            Document doc = Jsoup.parse(rendered);
+                            Elements links = doc.getElementsByTag("img");
+                            for (Element link : links) {
+                                String linkHref = link.attr("src");
+                                Log.d(TAG, "RESULT: IMG" + linkHref);
+                                images[i]=LoadImage(linkHref);
+                            }
+                        }
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            // Return the data from specified url
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+                //proposte.setText(excerpt_string);
+                //proposte.setImage(d);
+            proposte.setContent(excerpt_strings, images);
+
+                dialog.dismiss();
+                dialog.cancel();
+
+
+
+
+        }
+    }
+
+    /*class RetrieveFeedTask extends AsyncTask<String, Void, RSSFeed> {
+
+        private Exception exception;
+
+        protected RSSFeed doInBackground(String... urls) {
+            try {
+                URL url= new URL(urls[0]);
+                SAXParserFactory factory =SAXParserFactory.newInstance();
+                SAXParser parser=factory.newSAXParser();
+                XMLReader xmlreader=parser.getXMLReader();
+                RssHandler theRSSHandler=new RssHandler();
+                xmlreader.setContentHandler(theRSSHandler);
+                InputSource is=new InputSource(url.openStream());
+                xmlreader.parse(is);
+                return theRSSHandler.getFeed();
+            } catch (Exception e) {
+                this.exception = e;
+                return null;
+            }
+        }
+
+        protected void onPostExecute(RSSFeed feed) {
+            // TODO: check this.exception
+            // TODO: do something with the feed
+        }
+    }
+    */
+
+
 }
