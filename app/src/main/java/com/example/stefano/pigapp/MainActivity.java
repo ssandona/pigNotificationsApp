@@ -406,7 +406,7 @@ public class MainActivity extends AppCompatActivity {
             img.setImageDrawable(d);*/
         }
 
-        public void setContent(final String[] excerpt_strings, Drawable[] images){
+        public void setContent(String[] excerpt_strings, Drawable[] images, final String[] links){
             CustomListAdapter adapter=new CustomListAdapter(getActivity(), excerpt_strings, images);
             ListView list=(ListView)rootView.findViewById(R.id.proposteList);
             list.setAdapter(adapter);
@@ -417,8 +417,10 @@ public class MainActivity extends AppCompatActivity {
                 public void onItemClick(AdapterView<?> parent, View view,
                                         int position, long id) {
                     // TODO Auto-generated method stub
-                    String Slecteditem = excerpt_strings[+position];
-                    Toast.makeText(mContext, Slecteditem, Toast.LENGTH_SHORT).show();
+                    String Slecteditem = links[+position];
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Slecteditem));
+                    startActivity(browserIntent);
+                    //Toast.makeText(mContext, Slecteditem, Toast.LENGTH_SHORT).show();
 
                 }
             });
@@ -577,9 +579,13 @@ public class MainActivity extends AppCompatActivity {
 
     public class RetrieveFeedTask extends AsyncTask<String, Void, String> {
         ProgressDialog dialog;
-        String excerpt_string=null;
-        String[] excerpt_strings={null,null,null};
-        Drawable[] images={null,null,null};
+        String[] proposte_links={null,null,null};
+        String[] proposte_excerpt_strings={null,null,null};
+        Drawable[] proposte_images={null,null,null};
+
+        String[] eventi_links={null,null,null};
+        String[] eventi_excerpt_strings={null,null,null};
+        Drawable[] eventi_images={null,null,null};
 
         public Drawable LoadImage(String url) {
             try {
@@ -601,15 +607,10 @@ public class MainActivity extends AppCompatActivity {
             dialog.show();
         }
 
-        @Override
-        protected String doInBackground(String... params) {
-            String stream = null;
-            int i;
-            /*proposte*/
-            String urlString = params[0];
-
-            HTTPDataHandler hh = new HTTPDataHandler();
-            stream = hh.GetHTTPData(urlString);
+        private void populate(boolean proposte, String urlString){
+                int i;
+                HTTPDataHandler hh = new HTTPDataHandler();
+                String stream = hh.GetHTTPData(urlString);
                 if (stream != null) {
                     try {
                         Log.d(TAG, "RESULT: " + stream);
@@ -621,29 +622,58 @@ public class MainActivity extends AppCompatActivity {
                             /*retrieve post excerpt*/
 
                             JSONObject jo = (JSONObject) feed.get(i);
+                            String link = jo.getString("link");
+                            Log.d(TAG, "RESULT: " + link);
+                            if(proposte){
+                            proposte_links[i]=link;
+                            }
+                            else{
+                                eventi_links[i]=link;
+                            }
+
                             JSONObject excerpt = jo.getJSONObject("excerpt");
                             Log.d(TAG, "RESULT: " + excerpt.toString());
-                            excerpt_string = excerpt.getString("rendered");
+                            String excerpt_string = excerpt.getString("rendered");
                             Log.d(TAG, "RESULT: " + excerpt_string);
-                            excerpt_strings[i]=excerpt_string;
+                            if(proposte){
+                                proposte_excerpt_strings[i]=excerpt_string;
+                            }
+                            else{
+                                eventi_excerpt_strings[i]=excerpt_string;
+                            }
 
 
                             /*retrieve post image*/
                             JSONObject content = jo.getJSONObject("content");
                             String rendered = content.getString("rendered");
                             Document doc = Jsoup.parse(rendered);
-                            Elements links = doc.getElementsByTag("img");
-                            for (Element link : links) {
-                                String linkHref = link.attr("src");
+                            Elements imgElements = doc.getElementsByTag("img");
+                            for (Element img : imgElements) {
+                                String linkHref = img.attr("src");
                                 Log.d(TAG, "RESULT: IMG" + linkHref);
-                                images[i]=LoadImage(linkHref);
+                                if(proposte){
+                                    proposte_images[i]=LoadImage(linkHref);
+                                }
+                                else{
+                                    eventi_images[i]=LoadImage(linkHref);;
+                                }
                             }
+
                         }
 
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                 }
+            }
+
+        @Override
+        protected String doInBackground(String... params) {
+            String stream = null;
+            int i;
+
+            populate(true,params[0]);
+            //populate(false,params[0]);
 
             // Return the data from specified url
             return null;
@@ -653,7 +683,7 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String s) {
                 //proposte.setText(excerpt_string);
                 //proposte.setImage(d);
-            proposte.setContent(excerpt_strings, images);
+            proposte.setContent(proposte_excerpt_strings, proposte_images, proposte_links);
 
                 dialog.dismiss();
                 dialog.cancel();
