@@ -1,5 +1,6 @@
 package com.example.stefano.pigapp;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -29,6 +30,7 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
 import android.text.Html;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -41,6 +43,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.Scroller;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -74,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayList mSelectedItems;
     boolean changed=false;
     private static Context mContext;
+    private static Activity activity;
     ProposteFragment proposte;
     NewsFragment news;
     NotificationsFragment notifiche;
@@ -160,7 +164,6 @@ public class MainActivity extends AppCompatActivity {
         }
         String urlProposte="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=eventi&filter[posts_per_page]=3";
         String urlNews="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=notizie-pig&filter[posts_per_page]=3";
-
         new RetrieveFeedTask().execute(urlProposte,urlNews);
 
 
@@ -580,7 +583,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "NOTIFICATIONS: "+pastNotifications.toString());
             final String titles[]=new String[num];
             final String contents[]=new String[num];
-            Drawable icons[]=new Drawable[num];
+            final Drawable icons[]=new Drawable[num];
             opened=new boolean[num];
 
 
@@ -623,8 +626,22 @@ public class MainActivity extends AppCompatActivity {
                                         int position, long id) {
                     LinearLayout wrapper = (LinearLayout) view;
                     final TextView txtDescription = (TextView) wrapper.getChildAt(1);
+                    AlertDialog dialog = new AlertDialog.Builder(getActivity())
+                            .setTitle("Contenuto della notifica")
+                            .setMessage(contents[position])
+                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int which) {
+                                    dialog.dismiss();
+                                }
+                            })
+                            .show();
+                    TextView textView = (TextView) dialog.findViewById(android.R.id.message);
+                    textView.setMaxLines(6);
+                    textView.setScroller(new Scroller(mContext));
+                    textView.setVerticalScrollBarEnabled(true);
+                    textView.setMovementMethod(new ScrollingMovementMethod());
 
-                    if (opened[position]) {
+                    /*if (opened[position]) {
                         txtDescription.setText(titles[position]);
                         opened[position]=false;
                         wrapper.setBackgroundColor(0);
@@ -635,7 +652,7 @@ public class MainActivity extends AppCompatActivity {
                         opened[position]=true;
                         wrapper.setBackgroundColor(Color.parseColor("#B5D5EE"));
                         txtDescription.setTextSize(15);
-                    }
+                    }*/
 
                 }
             });

@@ -31,6 +31,7 @@ import java.util.Random;
 public class MyGcmListenerService extends GcmListenerService {
     private final String TAG = "MyGcmListenerService";
     final static String GROUP_KEY_NOTIFICATIONS = "group_key_notifications";
+    final static int MAX_STORED_NOTIFICATIONS=10;
     Context mContext;
     public JSONArray notifications=new JSONArray();
 
@@ -69,10 +70,11 @@ public class MyGcmListenerService extends GcmListenerService {
         int defaultValue = -1;
         int topicsSubscriptions = PreferenceManager.
                 getDefaultSharedPreferences(this).getInt("topics", defaultValue);
+            Log.d(TAG, "Topic Subscription: "+topicsSubscriptions);
             if(topicsSubscriptions==0){
                 return false;
             }
-            if(topicsSubscriptions==notificationTopic || notificationTopic==3){
+            if(topicsSubscriptions==notificationTopic || notificationTopic==3 || topicsSubscriptions==3){
                 return true;
             }
             return false;
@@ -96,6 +98,7 @@ public class MyGcmListenerService extends GcmListenerService {
     public void onMessageReceived(String from, Bundle data) {
 
         if(!interestingTopic(data)){
+            Log.d(TAG, "NOT INT");
             return;
         }
 
@@ -132,6 +135,15 @@ public class MyGcmListenerService extends GcmListenerService {
             JSONObject notification=new JSONObject(""+data.get("notification"));
             pastNotifications.put(notification);
 
+            int numStoredNotifications=pastNotifications.length();
+            int outOfBound=numStoredNotifications-MAX_STORED_NOTIFICATIONS;
+            if(outOfBound>0){
+                int i;
+                for(i=0;i<outOfBound;i++){
+                    pastNotifications.remove(0);
+                }
+            }
+
             PreferenceManager.getDefaultSharedPreferences(this).edit()
                     .putString("pastNotifications",pastNotifications.toString()).apply();
 
@@ -154,7 +166,7 @@ public class MyGcmListenerService extends GcmListenerService {
 
             android.support.v4.app.NotificationCompat.Builder mBuilder =
                     new android.support.v7.app.NotificationCompat.Builder(MyGcmListenerService.this)
-                            .setSmallIcon(R.drawable.ic_stat_ic_notification)
+                            .setSmallIcon(R.drawable.notifications)
                             .setContentTitle(getString(R.string.notifications_title))
                             .setAutoCancel(true)
                             .setGroup(GROUP_KEY_NOTIFICATIONS)

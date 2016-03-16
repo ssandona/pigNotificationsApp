@@ -43,7 +43,7 @@ public class CustomListAdapter extends ArrayAdapter<String> {
         if(small){
             imageView.getLayoutParams().height = 100;
             imageView.getLayoutParams().width = 100;
-            txtDescription.setTextSize(20);
+            txtDescription.setTextSize(18);
         }
 
         txtDescription.setText(Html.fromHtml(itemname[position]));
