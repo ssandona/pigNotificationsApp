@@ -43,6 +43,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.Scroller;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -583,6 +584,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "NOTIFICATIONS: "+pastNotifications.toString());
             final String titles[]=new String[num];
             final String contents[]=new String[num];
+            final String dates[]=new String[num];
             final Drawable icons[]=new Drawable[num];
             opened=new boolean[num];
 
@@ -598,12 +600,13 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "ELEM: i-"+i+" json: "+jo.toString());
                     titles[num-1-i]=jo.getString("title");
                     contents[num-1-i]=jo.getString("text");
+                    dates[num-1-i]=jo.getString("date");
                     String category=jo.getString("category");
                     switch(category){
-                        case "biblio":{icons[num-1-i]=getResources().getDrawable( R.drawable.ic_book_open_page_variant_light, mContext.getTheme()); break;}
-                        case "tess":{icons[num-1-i]=getResources().getDrawable( R.drawable.ic_people_black_24dp, mContext.getTheme()); break;}
+                        case "biblio":{icons[num-1-i]=getResources().getDrawable( R.drawable.ic_book_open_page_variant_light); break;}
+                        case "tess":{icons[num-1-i]=getResources().getDrawable( R.drawable.ic_people_black_24dp); break;}
                         case "info": {icons[num-1-i
-                                ]=getResources().getDrawable( R.drawable.ic_info_outline_black_24dp, mContext.getTheme()); break;}
+                                ]=getResources().getDrawable( R.drawable.ic_info_outline_black_24dp); break;}
                         default: break;
                     }
                 } catch (JSONException e) {
@@ -615,7 +618,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "i: "+titles[i]);
             }
 
-            CustomListAdapter adapter=new CustomListAdapter(getActivity(), titles, icons, true);
+            CustomListAdapter2 adapter=new CustomListAdapter2(getActivity(), titles, contents, dates, icons);
             ListView list=(ListView)rootView.findViewById(R.id.notificationsList);
             list.setAdapter(adapter);
 
@@ -624,10 +627,8 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view,
                                         int position, long id) {
-                    LinearLayout wrapper = (LinearLayout) view;
-                    final TextView txtDescription = (TextView) wrapper.getChildAt(1);
                     AlertDialog dialog = new AlertDialog.Builder(getActivity())
-                            .setTitle("Contenuto della notifica")
+                            .setTitle(titles[position])
                             .setMessage(contents[position])
                             .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int which) {
@@ -636,7 +637,7 @@ public class MainActivity extends AppCompatActivity {
                             })
                             .show();
                     TextView textView = (TextView) dialog.findViewById(android.R.id.message);
-                    textView.setMaxLines(6);
+                    textView.setMaxLines(10);
                     textView.setScroller(new Scroller(mContext));
                     textView.setVerticalScrollBarEnabled(true);
                     textView.setMovementMethod(new ScrollingMovementMethod());

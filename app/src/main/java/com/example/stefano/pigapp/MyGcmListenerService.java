@@ -21,6 +21,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Random;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -102,6 +105,10 @@ public class MyGcmListenerService extends GcmListenerService {
             return;
         }
 
+        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy"); //2014/08/06
+        Calendar cal = Calendar.getInstance();
+        String timestamp=dateFormat.format(cal.getTime());
+
         SharedPreferences mPrefs = mContext.getSharedPreferences("myAppPrefs", Context.MODE_PRIVATE);
         int defaultValue = -1;
         int numberOfActualNotifications = mPrefs.getInt("notifications", defaultValue);
@@ -133,6 +140,7 @@ public class MyGcmListenerService extends GcmListenerService {
             }
 
             JSONObject notification=new JSONObject(""+data.get("notification"));
+            notification.put("date",timestamp);
             pastNotifications.put(notification);
 
             int numStoredNotifications=pastNotifications.length();

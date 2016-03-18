@@ -6,43 +6,53 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.text.Html;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
+import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-public class CustomListAdapter extends ArrayAdapter<String> {
+public class CustomListAdapter2 extends ArrayAdapter<String> {
 
     private final Activity mContext;
-    private final String[] itemname;
+    private final String[] notificationsTitle;
+    private final String[] notificationsText;
+    private final String[] notificationsDate;
     private final Drawable[] images;
-    private final boolean small;
     private boolean isImageFitToScreen=false;
 
-    public CustomListAdapter(Activity context, String[] itemname, Drawable[] images, boolean small) {
-        super(context, R.layout.custom_list, itemname);
+
+    public CustomListAdapter2(Activity context, String[] notificationsTitle, String[] notificationsText, String[] notificationsDate, Drawable[] images) {
+        super(context, R.layout.custom_list, notificationsTitle);
         // TODO Auto-generated constructor stub
 
         this.mContext=context;
-        this.itemname=itemname;
+        this.notificationsTitle=notificationsTitle;
+        this.notificationsText=notificationsText;
+        this.notificationsDate=notificationsDate;
         this.images=images;
-        this.small=small;
     }
 
     public View getView(int position,View view,ViewGroup parent) {
         LayoutInflater inflater=mContext.getLayoutInflater();
-        View rowView;
-        if(small){
-            rowView=inflater.inflate(R.layout.custom_list2, null, true);
-        }
-        else{
-            rowView=inflater.inflate(R.layout.custom_list, null, true);
-        }
+        View rowView=rowView=inflater.inflate(R.layout.custom_list2, null, true);
+
+        /*DisplayMetrics displayMetrics = mContext.getResources().getDisplayMetrics();
+        float dpWidth = displayMetrics.widthPixels / displayMetrics.density;
+        int imageWidth=(int)(dpWidth*20)/100;
+        int titleWidth=((int)dpWidth*60)/100;
+        int textWidth=(int)(dpWidth*80)/100;
+        int dateWidth=(int)(dpWidth*20)/100;*/
 
         final ImageView imageView = (ImageView) rowView.findViewById(R.id.icon);
+        //imageView.setLayoutParams(new RelativeLayout.LayoutParams(imageWidth, RelativeLayout.LayoutParams.WRAP_CONTENT));
+
 
         /*imageView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -60,16 +70,18 @@ public class CustomListAdapter extends ArrayAdapter<String> {
         });*/
         Typeface myFontRegular=Typeface.createFromAsset(mContext.getAssets(),"fonts/PlayfairDisplay-Regular.ttf");
 
+        TextView txtTitle = (TextView) rowView.findViewById(R.id.itemTitle);
+        //txtTitle.setLayoutParams(new RelativeLayout.LayoutParams(titleWidth, RelativeLayout.LayoutParams.WRAP_CONTENT));
         TextView txtDescription = (TextView) rowView.findViewById(R.id.itemDescription);
+        //txtDescription.setLayoutParams(new RelativeLayout.LayoutParams(textWidth, RelativeLayout.LayoutParams.WRAP_CONTENT));
+        TextView txtDate = (TextView) rowView.findViewById(R.id.itemDate);
+        //txtDate.setLayoutParams(new RelativeLayout.LayoutParams(dateWidth, RelativeLayout.LayoutParams.WRAP_CONTENT));
         //txtDescription.setTypeface(myFontRegular);
 
-        if(small){
-            imageView.getLayoutParams().height = 100;
-            imageView.getLayoutParams().width = 100;
-            txtDescription.setTextSize(18);
-        }
 
-        txtDescription.setText(Html.fromHtml(itemname[position]));
+        txtTitle.setText(notificationsTitle[position]);
+        txtDescription.setText(notificationsText[position]);
+        txtDate.setText(notificationsDate[position]);
         imageView.setImageDrawable(images[position]);
         return rowView;
 
