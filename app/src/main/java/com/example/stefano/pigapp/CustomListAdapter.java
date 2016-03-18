@@ -39,7 +39,7 @@ public class CustomListAdapter extends ArrayAdapter<String> {
             rowView=inflater.inflate(R.layout.custom_list2, null, true);
         }
         else{
-            rowView=inflater.inflate(R.layout.custom_list, null, true);
+            rowView=inflater.inflate(R.layout.custom_list3, null, true);
         }
 
         final ImageView imageView = (ImageView) rowView.findViewById(R.id.icon);

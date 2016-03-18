@@ -771,11 +771,20 @@ public class MainActivity extends AppCompatActivity {
                                 news_links[i]=link;
                             }
 
-                            JSONObject excerpt = jo.getJSONObject("excerpt");
+                            //Content
+                            /*JSONObject excerpt = jo.getJSONObject("excerpt");
+                            Log.d(TAG, "RESULT: " + excerpt.toString());
+                            String excerpt_string = excerpt.getString("rendered");
+                            Log.d(TAG, "RESULT: " + excerpt_string);*/
+
+                            //Title
+                            JSONObject excerpt = jo.getJSONObject("title");
                             Log.d(TAG, "RESULT: " + excerpt.toString());
                             String excerpt_string = excerpt.getString("rendered");
                             Log.d(TAG, "RESULT: " + excerpt_string);
+
                             if(proposte){
+
                                 proposte_excerpt_strings[i]=excerpt_string;
                             }
                             else{
