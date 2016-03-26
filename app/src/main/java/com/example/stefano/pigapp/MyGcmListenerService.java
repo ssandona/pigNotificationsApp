@@ -10,7 +10,9 @@ import android.graphics.Color;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Binder;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
@@ -38,6 +40,7 @@ public class MyGcmListenerService extends GcmListenerService {
     Context mContext;
     public JSONArray notifications=new JSONArray();
 
+
     public void onCreate() {
         mContext = getApplicationContext();
         /*
@@ -49,6 +52,8 @@ public class MyGcmListenerService extends GcmListenerService {
         editor.commit();*/
 
     };
+
+
 
     public boolean interestingTopic(Bundle data){
         try {
@@ -218,6 +223,11 @@ public class MyGcmListenerService extends GcmListenerService {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        Intent in = new Intent("NEW_NOTIFICATION");
+        sendBroadcast(in);
+
+
+
         /*Log.d(TAG, "NOTIF NOW: " + numberOfActualNotifications);
         SharedPreferences.Editor editor = mPrefs.edit();
         editor.clear();
@@ -275,5 +285,9 @@ public class MyGcmListenerService extends GcmListenerService {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         notificationManager.notify(0 /* ID of notification */, notificationBuilder.build());
+
+
     }
+
+
 }

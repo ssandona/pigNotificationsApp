@@ -5,18 +5,22 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -39,6 +43,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -69,8 +74,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Observable;
+import java.util.Observer;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements Observer {
+    private boolean bound = false;
 
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private static final String TAG = "MainActivity";
@@ -103,6 +111,13 @@ public class MainActivity extends AppCompatActivity {
      */
     private ViewPager mViewPager;
 
+
+
+    /* Defined by ServiceCallbacks interface */
+    public void refreshNotifications() {
+        notifiche.refresh();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -110,6 +125,9 @@ public class MainActivity extends AppCompatActivity {
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+
+        ObservableObject.getInstance().addObserver(this);
 
         myFontTitle=Typeface.createFromAsset(getAssets(), "fonts/PlayfairDisplay-Bold.ttf");
         // Create the adapter that will return a fragment for each of the three
@@ -120,15 +138,21 @@ public class MainActivity extends AppCompatActivity {
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         mViewPager.setOffscreenPageLimit(2);
-
-        /*ProgressDialog progress = new ProgressDialog(this);
-        progress.setTitle("Caricamento");
-        progress.setMessage("Attendi...");
-        progress.show();*/
-// To dismiss the dialog
-        //progress.dismiss();
+        mContext=getApplicationContext();
 
 
+        /*Button retry=(Button)rootView.findViewById(R.id.retry);
+        retry.setOnClickListener(new Button.OnClickListener() {
+            public void onClick(View v) {
+                //Do stuff here
+                if (isNetworkConnected()) {
+                    initializeEverything();
+                } else {
+                    Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+        });*/
         mRegistrationBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -146,7 +170,6 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        mContext=getApplicationContext();
         if (checkPlayServices()) {
             int defaultValue = -1;
             int topicsSubscriptions = PreferenceManager.
@@ -163,11 +186,32 @@ public class MainActivity extends AppCompatActivity {
                 launchDialog(true);
             }
         }
+
+
+        if(isNetworkConnected()){
+            initializeEverything();
+        }
+        else{
+            Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
+                    Toast.LENGTH_LONG).show();
+            /*LinearLayout no_internet=(LinearLayout)findViewById(R.id.no_internet);
+            no_internet.setVisibility(View.VISIBLE);*/
+        }
+
+    }
+
+    @Override
+    public void update(Observable observable, Object data) {
+        Log.d(TAG, "NEWWWW NOTIFICATIONNNNNN");
+        notifiche.setContent();
+        //Toast.makeText(this, String.valueOf("activity observer " + data), Toast.LENGTH_SHORT).show();
+    }
+
+
+    public void initializeEverything(){
         String urlProposte="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=eventi&filter[posts_per_page]=3";
         String urlNews="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=notizie-pig&filter[posts_per_page]=3";
         new RetrieveFeedTask().execute(urlProposte,urlNews);
-
-
     }
 
     @Override
@@ -176,6 +220,34 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver,
                 new IntentFilter(QuickstartPreferences.REGISTRATION_COMPLETE));
     }
+
+    private static boolean isNetworkConnected() {
+        ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        return cm.getActiveNetworkInfo() != null;
+    }
+
+/*
+    @Override
+    protected void onResume() {
+        Log.v("Example", "onResume");
+
+        String action = getIntent().getAction();
+        // Prevent endless loop by adding a unique action, don't restart if action is present
+        if(action == null || !action.equals("Already created")) {
+            Log.v("Example", "Force restart");
+            Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
+            finish();
+        }
+        // Remove the unique action so the next time onResume is called it will restart
+        else
+            getIntent().setAction(null);
+
+        super.onResume();
+        LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver,
+                new IntentFilter(QuickstartPreferences.REGISTRATION_COMPLETE));
+    }*/
 
     @Override
     protected void onPause() {
@@ -272,6 +344,18 @@ public class MainActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.notifications_settings) {
             launchDialog(false);
+            return true;
+        }
+        if (id == R.id.refresh) {
+            if(isNetworkConnected()){
+                initializeEverything();
+            }
+            else{
+                Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
+                        Toast.LENGTH_LONG).show();
+            /*LinearLayout no_internet=(LinearLayout)findViewById(R.id.no_internet);
+            no_internet.setVisibility(View.VISIBLE);*/
+            }
             return true;
         }
 
@@ -390,6 +474,10 @@ public class MainActivity extends AppCompatActivity {
         private TextView mInformationTextView;
         String content="";
         View rootView;
+        CustomListAdapter adapter=null;
+        String[] excerpt_strings;
+        Drawable[] images;
+        String[] links;
         /**
          * The fragment argument representing the section number for this
          * fragment.
@@ -399,8 +487,11 @@ public class MainActivity extends AppCompatActivity {
         public ProposteFragment(int sectionNumber) {
             Bundle args = new Bundle();
             args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-
             this.setArguments(args);
+        }
+
+        public void refresh(){
+            adapter.notifyDataSetChanged();
         }
 
         public void setText(String text) {
@@ -414,23 +505,31 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void setContent(String[] excerpt_strings, Drawable[] images, final String[] links){
-            CustomListAdapter adapter=new CustomListAdapter(getActivity(), excerpt_strings, images, false);
-            ListView list=(ListView)rootView.findViewById(R.id.proposteList);
-            list.setAdapter(adapter);
+            this.excerpt_strings = excerpt_strings;
+            this.images = images;
+            this.links = links;
+            if(adapter==null) {
+                adapter = new CustomListAdapter(getActivity(), excerpt_strings, images, false);
 
-            list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                ListView list=(ListView)rootView.findViewById(R.id.proposteList);
+                list.setAdapter(adapter);
 
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view,
-                                        int position, long id) {
-                    // TODO Auto-generated method stub
-                    String Slecteditem = links[+position];
-                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Slecteditem));
-                    startActivity(browserIntent);
-                    //Toast.makeText(mContext, Slecteditem, Toast.LENGTH_SHORT).show();
+                list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
-                }
-            });
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view,
+                                            int position, long id) {
+                        // TODO Auto-generated method stub
+                        String Slecteditem = links[+position];
+                        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Slecteditem));
+                        startActivity(browserIntent);
+                        //Toast.makeText(mContext, Slecteditem, Toast.LENGTH_SHORT).show();
+
+                    }
+                });
+            }
+
+            refresh();
         }
 
         @Override
@@ -451,7 +550,7 @@ public class MainActivity extends AppCompatActivity {
 
 
             //mRegistrationProgressBar = (ProgressBar) rootView.findViewById(R.id.registrationProgressBar);
-            mRegistrationBroadcastReceiver = new BroadcastReceiver() {
+            /*mRegistrationBroadcastReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     mRegistrationProgressBar.setVisibility(ProgressBar.GONE);
@@ -465,7 +564,7 @@ public class MainActivity extends AppCompatActivity {
                         mInformationTextView.setText(getString(R.string.token_error_message));
                     }
                 }
-            };
+            };*/
             //mInformationTextView = (TextView) rootView.findViewById(R.id.informationTextView);
 
             return rootView;
@@ -484,6 +583,10 @@ public class MainActivity extends AppCompatActivity {
         private TextView mInformationTextView;
         String content="";
         View rootView;
+        CustomListAdapter adapter;
+        String[] excerpt_strings;
+        Drawable[] images;
+        String[] links;
         /**
          * The fragment argument representing the section number for this
          * fragment.
@@ -496,24 +599,36 @@ public class MainActivity extends AppCompatActivity {
             this.setArguments(args);
         }
 
-        public void setContent(String[] excerpt_strings, Drawable[] images, final String[] links){
-            CustomListAdapter adapter=new CustomListAdapter(getActivity(), excerpt_strings, images, false);
-            ListView list=(ListView)rootView.findViewById(R.id.newsList);
-            list.setAdapter(adapter);
+        public void refresh(){
+            adapter.notifyDataSetChanged();
+        }
 
-            list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        public void setContent(String[] excerpt_strings, Drawable[] images, final String[] links) {
+            this.excerpt_strings = excerpt_strings;
+            this.images = images;
+            this.links = links;
+            if (adapter == null) {
+                adapter = new CustomListAdapter(getActivity(), excerpt_strings, images, false);
 
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view,
-                                        int position, long id) {
-                    // TODO Auto-generated method stub
-                    String Slecteditem = links[+position];
-                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Slecteditem));
-                    startActivity(browserIntent);
-                    //Toast.makeText(mContext, Slecteditem, Toast.LENGTH_SHORT).show();
+                ListView list = (ListView) rootView.findViewById(R.id.newsList);
+                list.setAdapter(adapter);
 
-                }
-            });
+                list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view,
+                                            int position, long id) {
+                        // TODO Auto-generated method stub
+                        String Slecteditem = links[+position];
+                        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Slecteditem));
+                        startActivity(browserIntent);
+                        //Toast.makeText(mContext, Slecteditem, Toast.LENGTH_SHORT).show();
+
+                    }
+                });
+            }
+
+            refresh();
         }
 
 
@@ -562,6 +677,11 @@ public class MainActivity extends AppCompatActivity {
         View rootView;
         boolean opened[];
         Drawable background;
+        CustomListAdapter2 adapter;
+        String titles[]=null;
+        String contents[]=null;
+        String dates[]=null;
+        Drawable icons[]=null;
 
         /**
          * The fragment argument representing the section number for this
@@ -575,6 +695,10 @@ public class MainActivity extends AppCompatActivity {
             this.setArguments(args);
         }
 
+        public void refresh(){
+            adapter.notifyDataSetChanged();
+        }
+
         public void setContent(){
            JSONArray pastNotifications= retrievePastNotifications();
             int num=pastNotifications.length();
@@ -582,12 +706,14 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             Log.d(TAG, "NOTIFICATIONS: "+pastNotifications.toString());
-            final String titles[]=new String[num];
-            final String contents[]=new String[num];
-            final String dates[]=new String[num];
-            final Drawable icons[]=new Drawable[num];
-            opened=new boolean[num];
 
+            opened=new boolean[num];
+            if(adapter==null){
+                titles=new String[10];
+                contents=new String[10];
+                dates=new String[10];
+                icons=new Drawable[10];
+            }
 
 
             int i;
@@ -617,46 +743,36 @@ public class MainActivity extends AppCompatActivity {
             for(i=0;i<pastNotifications.length();i++){
                 Log.d(TAG, "i: "+titles[i]);
             }
+            if(adapter==null) {
+                adapter = new CustomListAdapter2(getActivity(), titles, contents, dates, icons);
+                ListView list=(ListView)rootView.findViewById(R.id.notificationsList);
+                list.setAdapter(adapter);
 
-            CustomListAdapter2 adapter=new CustomListAdapter2(getActivity(), titles, contents, dates, icons);
-            ListView list=(ListView)rootView.findViewById(R.id.notificationsList);
-            list.setAdapter(adapter);
+                list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
-            list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view,
+                                            int position, long id) {
+                        AlertDialog dialog = new AlertDialog.Builder(getActivity())
+                                .setTitle(titles[position])
+                                .setMessage(contents[position])
+                                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        dialog.dismiss();
+                                    }
+                                })
+                                .show();
+                        TextView textView = (TextView) dialog.findViewById(android.R.id.message);
+                        textView.setMaxLines(10);
+                        textView.setScroller(new Scroller(mContext));
+                        textView.setVerticalScrollBarEnabled(true);
+                        textView.setMovementMethod(new ScrollingMovementMethod());
 
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view,
-                                        int position, long id) {
-                    AlertDialog dialog = new AlertDialog.Builder(getActivity())
-                            .setTitle(titles[position])
-                            .setMessage(contents[position])
-                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int which) {
-                                    dialog.dismiss();
-                                }
-                            })
-                            .show();
-                    TextView textView = (TextView) dialog.findViewById(android.R.id.message);
-                    textView.setMaxLines(10);
-                    textView.setScroller(new Scroller(mContext));
-                    textView.setVerticalScrollBarEnabled(true);
-                    textView.setMovementMethod(new ScrollingMovementMethod());
+                    }
+                });
+            }
 
-                    /*if (opened[position]) {
-                        txtDescription.setText(titles[position]);
-                        opened[position]=false;
-                        wrapper.setBackgroundColor(0);
-                        txtDescription.setTextSize(20);
-
-                    } else {
-                        txtDescription.setText(contents[position]);
-                        opened[position]=true;
-                        wrapper.setBackgroundColor(Color.parseColor("#B5D5EE"));
-                        txtDescription.setTextSize(15);
-                    }*/
-
-                }
-            });
+            refresh();
 
         }
 
@@ -834,6 +950,7 @@ public class MainActivity extends AppCompatActivity {
                 //proposte.setImage(d);
             proposte.setContent(proposte_excerpt_strings, proposte_images, proposte_links);
             news.setContent(news_excerpt_strings, news_images, news_links);
+            notifiche.setContent();
 
                 dialog.dismiss();
                 dialog.cancel();
