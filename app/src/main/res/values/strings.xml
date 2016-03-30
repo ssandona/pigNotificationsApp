@@ -17,11 +17,14 @@
     <string name="cancel">cancella</string>
     <string name="no_internet">Nessuna connessione ad Internet</string>
     <string name="retry">Riprova</string>
+    <string name="notifications">Notifica</string>
+
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
     <string name="background">pig_background6</string>
+    <string name="title_activity_notification">Notification</string>
 
 
 </resources>

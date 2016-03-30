@@ -86,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
     ArrayList mSelectedItems;
     boolean changed=false;
     private static Context mContext;
+    private MainActivity main;
     private static Activity activity;
     ProposteFragment proposte;
     NewsFragment news;
@@ -127,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
         setSupportActionBar(toolbar);
 
 
-        ObservableObject.getInstance().addObserver(this);
+
 
         myFontTitle=Typeface.createFromAsset(getAssets(), "fonts/PlayfairDisplay-Bold.ttf");
         // Create the adapter that will return a fragment for each of the three
@@ -139,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
         mViewPager.setAdapter(mSectionsPagerAdapter);
         mViewPager.setOffscreenPageLimit(2);
         mContext=getApplicationContext();
-
+        main=this;
 
         /*Button retry=(Button)rootView.findViewById(R.id.retry);
         retry.setOnClickListener(new Button.OnClickListener() {
@@ -188,15 +189,13 @@ public class MainActivity extends AppCompatActivity implements Observer {
         }
 
 
-        if(isNetworkConnected()){
+        /*if(isNetworkConnected()){
             initializeEverything();
         }
         else{
             Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
                     Toast.LENGTH_LONG).show();
-            /*LinearLayout no_internet=(LinearLayout)findViewById(R.id.no_internet);
-            no_internet.setVisibility(View.VISIBLE);*/
-        }
+        }*/
 
     }
 
@@ -211,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
     public void initializeEverything(){
         String urlProposte="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=eventi&filter[posts_per_page]=3";
         String urlNews="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=notizie-pig&filter[posts_per_page]=3";
-        new RetrieveFeedTask().execute(urlProposte,urlNews);
+        new RetrieveFeedTask().execute(urlProposte, urlNews);
     }
 
     @Override
@@ -219,6 +218,16 @@ public class MainActivity extends AppCompatActivity implements Observer {
         super.onResume();
         LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver,
                 new IntentFilter(QuickstartPreferences.REGISTRATION_COMPLETE));
+        ObservableObject.getInstance().addObserver(this);
+        if(isNetworkConnected()){
+            initializeEverything();
+        }
+        else{
+            Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
+                    Toast.LENGTH_LONG).show();
+            /*LinearLayout no_internet=(LinearLayout)findViewById(R.id.no_internet);
+            no_internet.setVisibility(View.VISIBLE);*/
+        }
     }
 
     private static boolean isNetworkConnected() {
@@ -484,11 +493,11 @@ public class MainActivity extends AppCompatActivity implements Observer {
          */
         private static final String ARG_SECTION_NUMBER = "section_number";
 
-        public ProposteFragment(int sectionNumber) {
+        /*public ProposteFragment(int sectionNumber) {
             Bundle args = new Bundle();
             args.putInt(ARG_SECTION_NUMBER, sectionNumber);
             this.setArguments(args);
-        }
+        }*/
 
         public void refresh(){
             adapter.notifyDataSetChanged();
@@ -593,11 +602,11 @@ public class MainActivity extends AppCompatActivity implements Observer {
          */
         private static final String ARG_SECTION_NUMBER = "section_number";
 
-        public NewsFragment(int sectionNumber) {
+        /*public NewsFragment(int sectionNumber) {
             Bundle args = new Bundle();
             args.putInt(ARG_SECTION_NUMBER, sectionNumber);
             this.setArguments(args);
-        }
+        }*/
 
         public void refresh(){
             adapter.notifyDataSetChanged();
@@ -678,10 +687,10 @@ public class MainActivity extends AppCompatActivity implements Observer {
         boolean opened[];
         Drawable background;
         CustomListAdapter2 adapter;
-        String titles[]=null;
-        String contents[]=null;
-        String dates[]=null;
-        Drawable icons[]=null;
+        ArrayList<String> titles=null;
+        ArrayList<String> contents=null;
+        ArrayList<String> dates=null;
+        ArrayList<Drawable> icons=null;
 
         /**
          * The fragment argument representing the section number for this
@@ -689,17 +698,21 @@ public class MainActivity extends AppCompatActivity implements Observer {
          */
         private static final String ARG_SECTION_NUMBER = "section_number";
 
-        public NotificationsFragment(int sectionNumber) {
+        /*public NotificationsFragment(int sectionNumber) {
             Bundle args = new Bundle();
             args.putInt(ARG_SECTION_NUMBER, sectionNumber);
             this.setArguments(args);
-        }
+        }*/
 
         public void refresh(){
             adapter.notifyDataSetChanged();
         }
 
         public void setContent(){
+            Activity activity = getActivity();
+            if (!isAdded() || activity == null) {
+                return;
+            }
            JSONArray pastNotifications= retrievePastNotifications();
             int num=pastNotifications.length();
             if(num==0){
@@ -709,10 +722,16 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
             opened=new boolean[num];
             if(adapter==null){
-                titles=new String[10];
-                contents=new String[10];
-                dates=new String[10];
-                icons=new Drawable[10];
+                titles=new ArrayList<String>();
+                contents=new ArrayList<String>();
+                dates=new ArrayList<String>();
+                icons=new ArrayList<Drawable>();
+            }
+            else{
+                titles.clear();
+                contents.clear();
+                dates.clear();
+                icons.clear();
             }
 
 
@@ -721,18 +740,18 @@ public class MainActivity extends AppCompatActivity implements Observer {
                 opened[i]=false;
             }
             for(i=0;i<num;i++){
+                Log.d(TAG,"NUM ITEM: "+num);
                 try {
                     JSONObject jo=pastNotifications.getJSONObject(i);
                     Log.d(TAG, "ELEM: i-"+i+" json: "+jo.toString());
-                    titles[num-1-i]=jo.getString("title");
-                    contents[num-1-i]=jo.getString("text");
-                    dates[num-1-i]=jo.getString("date");
+                    titles.add(0,jo.getString("title"));
+                    contents.add(0,jo.getString("text"));
+                    dates.add(0,jo.getString("date"));
                     String category=jo.getString("category");
                     switch(category){
-                        case "biblio":{icons[num-1-i]=getResources().getDrawable( R.drawable.ic_book_open_page_variant_light); break;}
-                        case "tess":{icons[num-1-i]=getResources().getDrawable( R.drawable.ic_people_black_24dp); break;}
-                        case "info": {icons[num-1-i
-                                ]=getResources().getDrawable( R.drawable.ic_info_outline_black_24dp); break;}
+                        case "biblio":{icons.add(0,getResources().getDrawable( R.drawable.ic_book_open_page_variant_light)); break;}
+                        case "tess":{icons.add(0,getResources().getDrawable( R.drawable.ic_people_black_24dp)); break;}
+                        case "info": {icons.add(0,getResources().getDrawable( R.drawable.ic_info_outline_black_24dp)); break;}
                         default: break;
                     }
                 } catch (JSONException e) {
@@ -741,7 +760,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             }
 
             for(i=0;i<pastNotifications.length();i++){
-                Log.d(TAG, "i: "+titles[i]);
+                Log.d(TAG, "i: "+titles.get(i));
             }
             if(adapter==null) {
                 adapter = new CustomListAdapter2(getActivity(), titles, contents, dates, icons);
@@ -754,8 +773,8 @@ public class MainActivity extends AppCompatActivity implements Observer {
                     public void onItemClick(AdapterView<?> parent, View view,
                                             int position, long id) {
                         AlertDialog dialog = new AlertDialog.Builder(getActivity())
-                                .setTitle(titles[position])
-                                .setMessage(contents[position])
+                                .setTitle(titles.get(position))
+                                .setMessage(contents.get(position))
                                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface dialog, int which) {
                                         dialog.dismiss();
@@ -803,9 +822,9 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
             switch(position)
             {
-                case 0: {proposte= new ProposteFragment(0);return proposte;}
-                case 1: {news= new NewsFragment(1);return news;}
-                default : {notifiche=new NotificationsFragment(2);return notifiche;}
+                case 0: {proposte= new ProposteFragment();return proposte;}
+                case 1: {news= new NewsFragment();return news;}
+                default : {notifiche=new NotificationsFragment();return notifiche;}
             }
         }
 

@@ -57,9 +57,12 @@
         <ListView
             android:id="@+id/notificationsList"
             android:layout_below="@id/notifications_title"
+            android:layout_marginTop="70dp"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginTop="70dp"
+            android:paddingBottom="20dp"
+            android:clipToPadding="false"
+            android:scrollbarStyle="outsideOverlay"
             />
 
 

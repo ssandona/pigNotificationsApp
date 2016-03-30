@@ -18,17 +18,19 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
 public class CustomListAdapter2 extends ArrayAdapter<String> {
 
     private final Activity mContext;
-    private final String[] notificationsTitle;
-    private final String[] notificationsText;
-    private final String[] notificationsDate;
-    private final Drawable[] images;
+    private final ArrayList<String>  notificationsTitle;
+    private final ArrayList<String>  notificationsText;
+    private final ArrayList<String>  notificationsDate;
+    private final ArrayList<Drawable>  images;
     private boolean isImageFitToScreen=false;
 
 
-    public CustomListAdapter2(Activity context, String[] notificationsTitle, String[] notificationsText, String[] notificationsDate, Drawable[] images) {
+    public CustomListAdapter2(Activity context, ArrayList<String> notificationsTitle, ArrayList<String>  notificationsText, ArrayList<String>  notificationsDate, ArrayList<Drawable>  images) {
         super(context, R.layout.custom_list, notificationsTitle);
         // TODO Auto-generated constructor stub
 
@@ -79,10 +81,10 @@ public class CustomListAdapter2 extends ArrayAdapter<String> {
         //txtDescription.setTypeface(myFontRegular);
 
 
-        txtTitle.setText(notificationsTitle[position]);
-        txtDescription.setText(notificationsText[position]);
-        txtDate.setText(notificationsDate[position]);
-        imageView.setImageDrawable(images[position]);
+        txtTitle.setText(notificationsTitle.get(position));
+        txtDescription.setText(notificationsText.get(position));
+        txtDate.setText(notificationsDate.get(position));
+        imageView.setImageDrawable(images.get(position));
         return rowView;
 
     };

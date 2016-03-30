@@ -55,9 +55,12 @@
         <ListView
             android:id="@+id/newsList"
             android:layout_below="@id/news_title"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:layout_marginTop="70dp"/>
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="70dp"
+            android:paddingBottom="8dp"
+            android:clipToPadding="false"
+            android:scrollbarStyle="outsideOverlay"/>
 
     </RelativeLayout>
 
