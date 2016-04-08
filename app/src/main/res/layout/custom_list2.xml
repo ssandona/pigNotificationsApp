@@ -15,7 +15,7 @@
 
     <RelativeLayout
         android:layout_width="0dp"
-        android:layout_weight="0.85"
+        android:layout_weight="0.80"
         android:layout_height="wrap_content">
 
     <LinearLayout
@@ -55,6 +55,13 @@
         android:maxLines="1"
         android:layout_marginBottom="3dp"/>
     </RelativeLayout>
+    <ImageView
+        android:id="@+id/status"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.05"
+        android:contentDescription="desc"
+        android:layout_gravity="center_vertical"/>
 
 
 

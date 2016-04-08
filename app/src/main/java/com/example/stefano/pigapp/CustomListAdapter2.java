@@ -27,10 +27,11 @@ public class CustomListAdapter2 extends ArrayAdapter<String> {
     private final ArrayList<String>  notificationsText;
     private final ArrayList<String>  notificationsDate;
     private final ArrayList<Drawable>  images;
+    private final ArrayList<Drawable>  status;
     private boolean isImageFitToScreen=false;
 
 
-    public CustomListAdapter2(Activity context, ArrayList<String> notificationsTitle, ArrayList<String>  notificationsText, ArrayList<String>  notificationsDate, ArrayList<Drawable>  images) {
+    public CustomListAdapter2(Activity context, ArrayList<String> notificationsTitle, ArrayList<String>  notificationsText, ArrayList<String>  notificationsDate, ArrayList<Drawable>  images, ArrayList<Drawable>  status) {
         super(context, R.layout.custom_list, notificationsTitle);
         // TODO Auto-generated constructor stub
 
@@ -38,6 +39,7 @@ public class CustomListAdapter2 extends ArrayAdapter<String> {
         this.notificationsTitle=notificationsTitle;
         this.notificationsText=notificationsText;
         this.notificationsDate=notificationsDate;
+        this.status=status;
         this.images=images;
     }
 
@@ -53,6 +55,7 @@ public class CustomListAdapter2 extends ArrayAdapter<String> {
         int dateWidth=(int)(dpWidth*20)/100;*/
 
         final ImageView imageView = (ImageView) rowView.findViewById(R.id.icon);
+        final ImageView statusView = (ImageView) rowView.findViewById(R.id.status);
         //imageView.setLayoutParams(new RelativeLayout.LayoutParams(imageWidth, RelativeLayout.LayoutParams.WRAP_CONTENT));
 
 
@@ -85,6 +88,8 @@ public class CustomListAdapter2 extends ArrayAdapter<String> {
         txtDescription.setText(notificationsText.get(position));
         txtDate.setText(notificationsDate.get(position));
         imageView.setImageDrawable(images.get(position));
+        statusView.setImageDrawable(status.get(position));
+
         return rowView;
 
     };

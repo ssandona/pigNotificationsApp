@@ -145,7 +145,9 @@ public class MyGcmListenerService extends GcmListenerService {
             }
 
             JSONObject notification=new JSONObject(""+data.get("notification"));
+            String id=notification.getString("id");
             notification.put("date",timestamp);
+            notification.put("viewed",false);
             pastNotifications.put(notification);
 
             int numStoredNotifications=pastNotifications.length();
@@ -175,7 +177,8 @@ public class MyGcmListenerService extends GcmListenerService {
 
 // Creates an explicit intent for an Activity in your app
             Intent resultIntent = new Intent(MyGcmListenerService.this, NotificationActivity.class);
-            resultIntent.putExtra("messages", notification.toString());
+            resultIntent.putExtra("message", id);
+            resultIntent.putExtra("src", 1);
 
             android.support.v4.app.NotificationCompat.Builder mBuilder =
                     new android.support.v7.app.NotificationCompat.Builder(MyGcmListenerService.this)

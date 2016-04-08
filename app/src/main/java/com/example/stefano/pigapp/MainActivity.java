@@ -12,13 +12,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
+import android.opengl.Visibility;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
@@ -91,6 +94,8 @@ public class MainActivity extends AppCompatActivity implements Observer {
     ProposteFragment proposte;
     NewsFragment news;
     NotificationsFragment notifiche;
+    int cont=0;
+    boolean hide=false;
 
     private static Typeface myFontTitle;
 
@@ -139,6 +144,48 @@ public class MainActivity extends AppCompatActivity implements Observer {
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         mViewPager.setOffscreenPageLimit(2);
+
+        mViewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+
+            @Override
+            public void onPageSelected(int arg0) {
+                // TODO Auto-generated method stub
+
+                //DO THINGS HERE
+
+            }
+
+            @Override
+            public void onPageScrolled(int arg0, float arg1, int arg2) {
+                // TODO Auto-generated method stub
+                Log.d(TAG,"SCROLLED");
+                if(cont>1) {
+                    if(!hide) {
+                        proposte.hideTitle();
+                        news.hideTitle();
+                        notifiche.hideTitle();
+                        hide=true;
+                    }
+                }
+                else{cont++;}
+
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int arg0) {
+
+                    // TODO Auto-generated method stub
+                    Log.d(TAG, "STATE CHANGED");
+                if(hide) {
+                    proposte.showTitle();
+                    news.showTitle();
+                    notifiche.showTitle();
+                    hide=false;
+                }
+
+
+            }
+        });
         mContext=getApplicationContext();
         main=this;
 
@@ -188,6 +235,16 @@ public class MainActivity extends AppCompatActivity implements Observer {
             }
         }
 
+        if(isNetworkConnected()){
+            initializeEverything();
+        }
+        else{
+            Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
+                    Toast.LENGTH_LONG).show();
+            /*LinearLayout no_internet=(LinearLayout)findViewById(R.id.no_internet);
+            no_internet.setVisibility(View.VISIBLE);*/
+        }
+
 
         /*if(isNetworkConnected()){
             initializeEverything();
@@ -207,8 +264,8 @@ public class MainActivity extends AppCompatActivity implements Observer {
     }
 
 
-    public void initializeEverything(){
-        String urlProposte="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=eventi&filter[posts_per_page]=3";
+    public void initializeEverything() {
+        String urlProposte = "http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=eventi&filter[posts_per_page]=3";
         String urlNews="http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=notizie-pig&filter[posts_per_page]=3";
         new RetrieveFeedTask().execute(urlProposte, urlNews);
     }
@@ -219,14 +276,9 @@ public class MainActivity extends AppCompatActivity implements Observer {
         LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver,
                 new IntentFilter(QuickstartPreferences.REGISTRATION_COMPLETE));
         ObservableObject.getInstance().addObserver(this);
-        if(isNetworkConnected()){
-            initializeEverything();
-        }
-        else{
-            Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
-                    Toast.LENGTH_LONG).show();
-            /*LinearLayout no_internet=(LinearLayout)findViewById(R.id.no_internet);
-            no_internet.setVisibility(View.VISIBLE);*/
+        Log.d(TAG,"ON RESUME");
+        if(notifiche!=null) {
+            notifiche.setContent();
         }
     }
 
@@ -487,6 +539,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
         String[] excerpt_strings;
         Drawable[] images;
         String[] links;
+        TextView titleView;
         /**
          * The fragment argument representing the section number for this
          * fragment.
@@ -501,6 +554,14 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
         public void refresh(){
             adapter.notifyDataSetChanged();
+        }
+
+        public void hideTitle(){
+            titleView.setVisibility(View.INVISIBLE);
+        }
+
+        public void showTitle(){
+            titleView.setVisibility(View.VISIBLE);
         }
 
         public void setText(String text) {
@@ -548,8 +609,22 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
             /*TextView textView = (TextView) rootView.findViewById(R.id.proposte_content);
             textView.setText(content);*/
-            TextView titleView = (TextView) rootView.findViewById(R.id.proposte_title);
+            titleView = (TextView) rootView.findViewById(R.id.proposte_title);
             titleView.setTypeface(myFontTitle);
+
+            String[] titles2=null;
+            if(savedInstanceState!=null) {
+                titles2 = savedInstanceState.getStringArray("titles");
+            }
+            if(titles2!=null){
+                int i;
+                for(i=0;i<titles2.length;i++){
+                    Log.d("PROPOSTE ELEMENTONSAVED",titles2[i]);
+                }
+            }
+            else{
+                Log.d("PROPOSTE ELEMENTONSAVED","empty");
+            }
 
 
 
@@ -579,6 +654,22 @@ public class MainActivity extends AppCompatActivity implements Observer {
             return rootView;
         }
 
+        @Override
+        public void onSaveInstanceState(Bundle icicle) {
+            // NEVER CALLED
+            super.onSaveInstanceState(icicle);
+            Log.d("FRAGMENTONSAVE", "on save");
+            icicle.putStringArray("titles", excerpt_strings);
+            icicle.putStringArray("links", links);
+            Bitmap[] bitmapImages=new Bitmap[images.length];
+            int i;
+            for(i=0;i<images.length;i++){
+                bitmapImages[i]=((BitmapDrawable) images[i]).getBitmap();
+            }
+            icicle.putParcelableArray("images", bitmapImages);
+
+        }
+
 
     }
 
@@ -596,6 +687,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
         String[] excerpt_strings;
         Drawable[] images;
         String[] links;
+        TextView titleView;
         /**
          * The fragment argument representing the section number for this
          * fragment.
@@ -610,6 +702,14 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
         public void refresh(){
             adapter.notifyDataSetChanged();
+        }
+
+        public void hideTitle(){
+            titleView.setVisibility(View.INVISIBLE);
+        }
+
+        public void showTitle(){
+            titleView.setVisibility(View.VISIBLE);
         }
 
         public void setContent(String[] excerpt_strings, Drawable[] images, final String[] links) {
@@ -645,37 +745,47 @@ public class MainActivity extends AppCompatActivity implements Observer {
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             rootView = inflater.inflate(R.layout.fragment_news, container, false);
-            TextView titleView = (TextView) rootView.findViewById(R.id.news_title);
+            titleView = (TextView) rootView.findViewById(R.id.news_title);
             titleView.setTypeface(myFontTitle);
+
+
+            String[] titles2=null;
+            if(savedInstanceState!=null) {
+                titles2 = savedInstanceState.getStringArray("titles");
+            }
+            if(titles2!=null){
+                int i;
+                for(i=0;i<titles2.length;i++){
+                    Log.d("NEWS ELEMENTONSAVED",titles2[i]);
+                }
+            }
+            else{
+                Log.d("NEWS ELEMENTONSAVED","empty");
+            }
+
             /*TextView textView = (TextView) rootView.findViewById(R.id.news_content);
             textView.setText(content);*/
             return rootView;
         }
-    }
 
-    public static JSONArray retrievePastNotifications(){
-        JSONArray pastNotifications;
-        String notifications = PreferenceManager.
-                getDefaultSharedPreferences(mContext).getString("pastNotifications", "");
-        JSONObject jo;
-
-        if(notifications!= null && !notifications.equals(""))
-        {
-            Log.d(TAG, "NON vuota -> "+notifications);
-            try {
-                pastNotifications=new JSONArray(notifications);
-            } catch (JSONException e) {
-                pastNotifications=new JSONArray();
-                e.printStackTrace();
+        @Override
+        public void onSaveInstanceState(Bundle icicle) {
+            // NEVER CALLED
+            super.onSaveInstanceState(icicle);
+            Log.d("FRAGMENTONSAVE", "on save");
+            icicle.putStringArray("titles", excerpt_strings);
+            icicle.putStringArray("links", links);
+            Bitmap[] bitmapImages=new Bitmap[images.length];
+            int i;
+            for(i=0;i<images.length;i++){
+                bitmapImages[i]=((BitmapDrawable) images[i]).getBitmap();
             }
+            icicle.putParcelableArray("images", bitmapImages);
 
         }
-        else{
-            Log.d(TAG,"vuota iu ga");
-            pastNotifications=new JSONArray();
-        }
-        return pastNotifications;
     }
+
+
 
     /**
      * A fragment containing the news
@@ -685,12 +795,31 @@ public class MainActivity extends AppCompatActivity implements Observer {
         private BroadcastReceiver mRegistrationBroadcastReceiver;
         View rootView;
         boolean opened[];
-        Drawable background;
         CustomListAdapter2 adapter;
         ArrayList<String> titles=null;
         ArrayList<String> contents=null;
         ArrayList<String> dates=null;
         ArrayList<Drawable> icons=null;
+        ArrayList<String> ids=null;
+        ArrayList<Drawable> status=null;
+        TextView titleView;
+
+        @Override
+        public void onSaveInstanceState(Bundle icicle) {
+            // NEVER CALLED
+            super.onSaveInstanceState(icicle);
+            Log.d("FRAGMENTONSAVE", "on save");
+            icicle.putStringArrayList("titles", titles);
+            icicle.putStringArrayList("links", contents);
+            icicle.putStringArrayList("links", dates);
+            ArrayList<Bitmap> bitmapImages=new ArrayList<Bitmap>();
+            int i;
+            for(i=0;i<icons.size();i++){
+                bitmapImages.add(((BitmapDrawable) icons.get(i)).getBitmap());
+            }
+            icicle.putParcelableArrayList("images", bitmapImages);
+
+        }
 
         /**
          * The fragment argument representing the section number for this
@@ -708,12 +837,20 @@ public class MainActivity extends AppCompatActivity implements Observer {
             adapter.notifyDataSetChanged();
         }
 
+        public void hideTitle(){
+            titleView.setVisibility(View.INVISIBLE);
+        }
+
+        public void showTitle(){
+            titleView.setVisibility(View.VISIBLE);
+        }
+
         public void setContent(){
             Activity activity = getActivity();
             if (!isAdded() || activity == null) {
                 return;
             }
-           JSONArray pastNotifications= retrievePastNotifications();
+            JSONArray pastNotifications= Utils.retrievePastNotifications(mContext);
             int num=pastNotifications.length();
             if(num==0){
                 return;
@@ -726,25 +863,27 @@ public class MainActivity extends AppCompatActivity implements Observer {
                 contents=new ArrayList<String>();
                 dates=new ArrayList<String>();
                 icons=new ArrayList<Drawable>();
+                ids=new ArrayList<String>();
+                status=new ArrayList<Drawable>();
             }
             else{
                 titles.clear();
                 contents.clear();
                 dates.clear();
                 icons.clear();
+                ids.clear();
+                status.clear();
             }
-
 
             int i;
-            for(i=0;i<num;i++){
-                opened[i]=false;
-            }
+
             for(i=0;i<num;i++){
                 Log.d(TAG,"NUM ITEM: "+num);
                 try {
                     JSONObject jo=pastNotifications.getJSONObject(i);
-                    Log.d(TAG, "ELEM: i-"+i+" json: "+jo.toString());
-                    titles.add(0,jo.getString("title"));
+                    Log.d(TAG, "ELEM: i-" + i + " json: " + jo.toString());
+                    titles.add(0, jo.getString("title"));
+                    ids.add(0,jo.getString("id"));
                     contents.add(0,jo.getString("text"));
                     dates.add(0,jo.getString("date"));
                     String category=jo.getString("category");
@@ -753,6 +892,12 @@ public class MainActivity extends AppCompatActivity implements Observer {
                         case "tess":{icons.add(0,getResources().getDrawable( R.drawable.ic_people_black_24dp)); break;}
                         case "info": {icons.add(0,getResources().getDrawable( R.drawable.ic_info_outline_black_24dp)); break;}
                         default: break;
+                    }
+                    boolean viewed=jo.getBoolean("viewed");
+                    if (viewed == false) {
+                        status.add(0, getResources().getDrawable(R.drawable.circle));
+                    } else {
+                        status.add(0, getResources().getDrawable(R.drawable.transparent));
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -763,7 +908,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
                 Log.d(TAG, "i: "+titles.get(i));
             }
             if(adapter==null) {
-                adapter = new CustomListAdapter2(getActivity(), titles, contents, dates, icons);
+                adapter = new CustomListAdapter2(getActivity(), titles, contents, dates, icons, status);
                 ListView list=(ListView)rootView.findViewById(R.id.notificationsList);
                 list.setAdapter(adapter);
 
@@ -772,7 +917,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view,
                                             int position, long id) {
-                        AlertDialog dialog = new AlertDialog.Builder(getActivity())
+                        /*AlertDialog dialog = new AlertDialog.Builder(getActivity())
                                 .setTitle(titles.get(position))
                                 .setMessage(contents.get(position))
                                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
@@ -785,7 +930,11 @@ public class MainActivity extends AppCompatActivity implements Observer {
                         textView.setMaxLines(10);
                         textView.setScroller(new Scroller(mContext));
                         textView.setVerticalScrollBarEnabled(true);
-                        textView.setMovementMethod(new ScrollingMovementMethod());
+                        textView.setMovementMethod(new ScrollingMovementMethod());*/
+                        Intent resultIntent = new Intent(mContext, NotificationActivity.class);
+                        resultIntent.putExtra("message", ids.get(position));
+                        resultIntent.putExtra("src", 0);
+                        startActivity(resultIntent);
 
                     }
                 });
@@ -800,9 +949,25 @@ public class MainActivity extends AppCompatActivity implements Observer {
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             rootView = inflater.inflate(R.layout.fragment_notifications, container, false);
-            TextView titleView = (TextView) rootView.findViewById(R.id.notifications_title);
+            titleView = (TextView) rootView.findViewById(R.id.notifications_title);
             titleView.setTypeface(myFontTitle);
             setContent();
+
+
+            String[] titles2=null;
+            if(savedInstanceState!=null) {
+                titles2 = savedInstanceState.getStringArray("titles");
+            }
+            if(titles2!=null){
+                int i;
+                for(i=0;i<titles2.length;i++){
+                    Log.d("PROPOSTE ELEMENTONSAVED",titles2[i]);
+                }
+            }
+            else{
+                Log.d("PROPOSTE ELEMENTONSAVED","empty");
+            }
+
             return rootView;
         }
     }
