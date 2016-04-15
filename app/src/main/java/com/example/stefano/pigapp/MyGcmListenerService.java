@@ -33,6 +33,8 @@ import org.json.JSONObject;
 
 import java.util.Random;
 
+import me.leolin.shortcutbadger.ShortcutBadger;
+
 public class MyGcmListenerService extends GcmListenerService {
     private final String TAG = "MyGcmListenerService";
     final static String GROUP_KEY_NOTIFICATIONS = "group_key_notifications";
@@ -144,16 +146,30 @@ public class MyGcmListenerService extends GcmListenerService {
                 pastNotifications=new JSONArray();
             }
 
+            Random r = new Random();
+            int nId=r.nextInt(1000);
+
             JSONObject notification=new JSONObject(""+data.get("notification"));
             String id=notification.getString("id");
             notification.put("date",timestamp);
             notification.put("viewed",false);
+            notification.put("notificationID",nId);
             pastNotifications.put(notification);
+
+            int badgeCount = 0;
+            int i;
+            for(i=0;i<pastNotifications.length();i++){
+                JSONObject notif=pastNotifications.getJSONObject(i);
+                if(!notif.getBoolean("viewed")){
+                    badgeCount++;
+                }
+            }
+            ShortcutBadger.applyCount(mContext, badgeCount); //for 1.1.4
+            //ShortcutBadger.with(getApplicationContext()).count(badgeCount); //for 1.1.3
 
             int numStoredNotifications=pastNotifications.length();
             int outOfBound=numStoredNotifications-MAX_STORED_NOTIFICATIONS;
             if(outOfBound>0){
-                int i;
                 for(i=0;i<outOfBound;i++){
                     pastNotifications.remove(0);
                 }
@@ -201,8 +217,7 @@ public class MyGcmListenerService extends GcmListenerService {
 // Adds the Intent that starts the Activity to the top of the stack
             stackBuilder.addNextIntent(resultIntent);
 
-            Random r = new Random();
-            int nId=r.nextInt(1000);
+
             PendingIntent resultPendingIntent =
                     stackBuilder.getPendingIntent(
                             nId,

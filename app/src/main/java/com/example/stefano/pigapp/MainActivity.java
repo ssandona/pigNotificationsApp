@@ -654,7 +654,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             return rootView;
         }
 
-        @Override
+        /*@Override
         public void onSaveInstanceState(Bundle icicle) {
             // NEVER CALLED
             super.onSaveInstanceState(icicle);
@@ -668,7 +668,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             }
             icicle.putParcelableArray("images", bitmapImages);
 
-        }
+        }*/
 
 
     }
@@ -768,7 +768,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             return rootView;
         }
 
-        @Override
+        /*@Override
         public void onSaveInstanceState(Bundle icicle) {
             // NEVER CALLED
             super.onSaveInstanceState(icicle);
@@ -782,7 +782,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             }
             icicle.putParcelableArray("images", bitmapImages);
 
-        }
+        }*/
     }
 
 
@@ -804,7 +804,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
         ArrayList<Drawable> status=null;
         TextView titleView;
 
-        @Override
+        /*@Override
         public void onSaveInstanceState(Bundle icicle) {
             // NEVER CALLED
             super.onSaveInstanceState(icicle);
@@ -819,7 +819,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             }
             icicle.putParcelableArrayList("images", bitmapImages);
 
-        }
+        }/*
 
         /**
          * The fragment argument representing the section number for this

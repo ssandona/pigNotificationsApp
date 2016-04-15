@@ -2,6 +2,8 @@ package com.example.stefano.pigapp;
 
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -23,6 +25,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import me.leolin.shortcutbadger.ShortcutBadger;
+
 public class NotificationActivity extends AppCompatActivity {
     int src=1;
 
@@ -41,6 +45,7 @@ public class NotificationActivity extends AppCompatActivity {
         src=intent.getIntExtra("src", 1);
         JSONArray pastNotifications= Utils.retrievePastNotifications(getApplicationContext());
        int i;
+       int badgeCount=-1;
        JSONObject notification=null;
        try{
            for(i=0;i<pastNotifications.length();i++){
@@ -48,16 +53,35 @@ public class NotificationActivity extends AppCompatActivity {
                if(actualNotification.getString("id").equals(id)){
                     notification=actualNotification;
                }
+               if(!actualNotification.getBoolean("viewed")){
+                   badgeCount++;
+               }
            }
+           if(badgeCount!=0) {
+               Log.d(TAG, "IF");
+               ShortcutBadger.applyCount(getApplicationContext(), badgeCount); //for 1.1.4
+           }
+           else{
+               Log.d(TAG, "ELSE");
+               ShortcutBadger.removeCount(getApplicationContext()); //for 1.1.4
+           }
+
            TextView titleView=(TextView)findViewById(R.id.title);
            TextView textView=(TextView)findViewById(R.id.field);
            ImageView image=(ImageView)findViewById(R.id.icon);
 
            if(notification!=null){
+
+
                Log.d("prova", "MESS:" + notification);
 
                titleView.setText(notification.getString("title"));
                //titleView.setTypeface(myFontItalic);
+                int nId=notification.getInt("notificationID");
+               NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+               mNotificationManager.cancel(nId);
+
+
 
 
                textView.setText(notification.getString("text"));
