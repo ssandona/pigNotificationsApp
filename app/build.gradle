@@ -39,6 +39,9 @@ dependencies {
     compile 'org.apache.httpcomponents:httpclient:4.5'
     compile files('libs/jsoup-1.8.3.jar')
     compile 'me.leolin:ShortcutBadger:1.1.4@aar'
+    compile ('com.github.worker8:tourguide:1.0.17-SNAPSHOT@aar'){
+        transitive=true
+    }
 }
 
 apply plugin: 'com.google.gms.google-services'

@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:layout_marginBottom="5dp">
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp">
 
     <ImageView
         android:id="@+id/icon"
@@ -61,7 +62,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="0.05"
         android:contentDescription="desc"
-        android:layout_gravity="center_vertical"/>
+        android:layout_gravity="center_vertical"
+        />
 
 
 

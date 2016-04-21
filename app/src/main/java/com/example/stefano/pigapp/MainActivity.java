@@ -1,5 +1,6 @@
 package com.example.stefano.pigapp;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -12,6 +13,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -28,7 +30,9 @@ import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.view.menu.ActionMenuItemView;
 import android.support.v7.widget.Toolbar;
 
 import android.support.v4.app.Fragment;
@@ -39,12 +43,17 @@ import android.os.Bundle;
 import android.text.Html;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.BounceInterpolator;
+import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -79,6 +88,14 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.concurrent.Semaphore;
+
+import tourguide.tourguide.ChainTourGuide;
+import tourguide.tourguide.Overlay;
+import tourguide.tourguide.Pointer;
+import tourguide.tourguide.Sequence;
+import tourguide.tourguide.ToolTip;
+import tourguide.tourguide.TourGuide;
 
 public class MainActivity extends AppCompatActivity implements Observer {
     private boolean bound = false;
@@ -91,11 +108,15 @@ public class MainActivity extends AppCompatActivity implements Observer {
     private static Context mContext;
     private MainActivity main;
     private static Activity activity;
+    private Menu myMenu=null;
+
     ProposteFragment proposte;
     NewsFragment news;
     NotificationsFragment notifiche;
     int cont=0;
     boolean hide=false;
+
+    boolean myItemShouldBeEnabled=false;
 
     private static Typeface myFontTitle;
 
@@ -117,6 +138,8 @@ public class MainActivity extends AppCompatActivity implements Observer {
      */
     private ViewPager mViewPager;
 
+    private Button fab;
+
 
 
     /* Defined by ServiceCallbacks interface */
@@ -132,6 +155,18 @@ public class MainActivity extends AppCompatActivity implements Observer {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        /*fab = (ButtonFloat) findViewById(R.id.buttonFloat);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d("TUTORIAL","FINE");
+                myItemShouldBeEnabled=true;
+                enableDisableMenuItems();
+                if(mTourGuideHandler!=null) {
+                    mTourGuideHandler.cleanUp();
+                }
+            }
+        });*/
 
 
 
@@ -158,29 +193,30 @@ public class MainActivity extends AppCompatActivity implements Observer {
             @Override
             public void onPageScrolled(int arg0, float arg1, int arg2) {
                 // TODO Auto-generated method stub
-                Log.d(TAG,"SCROLLED");
-                if(cont>1) {
-                    if(!hide) {
+                //Log.d(TAG,"SCROLLED");
+                if (cont > 1) {
+                    if (!hide) {
                         proposte.hideTitle();
                         news.hideTitle();
                         notifiche.hideTitle();
-                        hide=true;
+                        hide = true;
                     }
+                } else {
+                    cont++;
                 }
-                else{cont++;}
 
             }
 
             @Override
             public void onPageScrollStateChanged(int arg0) {
 
-                    // TODO Auto-generated method stub
-                    Log.d(TAG, "STATE CHANGED");
-                if(hide) {
+                // TODO Auto-generated method stub
+                //Log.d(TAG, "STATE CHANGED");
+                if (hide) {
                     proposte.showTitle();
                     news.showTitle();
                     notifiche.showTitle();
-                    hide=false;
+                    hide = false;
                 }
 
 
@@ -231,19 +267,22 @@ public class MainActivity extends AppCompatActivity implements Observer {
             Intent intent = new Intent(this, RegistrationIntentService.class);
             startService(intent);
             if (topicsSubscriptions == defaultValue) {
-                launchDialog(true);
+                //launchDialog(true);
+                myItemShouldBeEnabled=false;
             }
+            else {myItemShouldBeEnabled=true;}
         }
-
+        /*
         if(isNetworkConnected()){
             initializeEverything();
         }
         else{
             Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
                     Toast.LENGTH_LONG).show();
-            /*LinearLayout no_internet=(LinearLayout)findViewById(R.id.no_internet);
-            no_internet.setVisibility(View.VISIBLE);*/
-        }
+            no_internet.setVisibility(View.VISIBLE);
+        }*/
+        loadEverything();
+
 
 
         /*if(isNetworkConnected()){
@@ -255,6 +294,17 @@ public class MainActivity extends AppCompatActivity implements Observer {
         }*/
 
     }
+
+    public void loadEverything(){
+        if(isNetworkConnected()){
+            initializeEverything();
+        }
+        else{
+            Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
 
     @Override
     public void update(Observable observable, Object data) {
@@ -276,11 +326,40 @@ public class MainActivity extends AppCompatActivity implements Observer {
         LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver,
                 new IntentFilter(QuickstartPreferences.REGISTRATION_COMPLETE));
         ObservableObject.getInstance().addObserver(this);
-        Log.d(TAG,"ON RESUME");
+        Log.d(TAG, "ON RESUME");
         if(notifiche!=null) {
             notifiche.setContent();
         }
+
     }
+
+    @Override
+    public void onWindowFocusChanged (boolean hasFocus){
+        super.onWindowFocusChanged(hasFocus);
+        Toolbar tb = (Toolbar)findViewById(R.id.toolbar);
+        ActionMenuItemView amiv=(ActionMenuItemView)tb.findViewById(R.id.refresh);
+        if(amiv==null){
+            Log.d("DEBUG", "onWindowFocusChanged NULL");
+        }
+        else {
+            Log.d("DEBUG", "onWindowFocusChanged NOT NULL");
+        }
+    }
+
+    /*@Override
+    protected void onPostResume (){
+        super.onPostResume();
+        Toolbar tb = (Toolbar)findViewById(R.id.toolbar);
+        mButton1=(ActionMenuItemView)tb.findViewById(R.id.share);
+        if(mButton1==null){
+            Log.d(TAG,"NO WAY");
+        }
+        else {
+            //startTutorial();
+            Log.d(TAG, "YESSSSSS");
+        }
+        startTutorial();
+    }*/
 
     private static boolean isNetworkConnected() {
         ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -390,10 +469,13 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        myMenu=menu;
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+        Log.d(TAG, "On create menu");
+        return super.onCreateOptionsMenu(menu);
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -405,6 +487,10 @@ public class MainActivity extends AppCompatActivity implements Observer {
         //noinspection SimplifiableIfStatement
         if (id == R.id.notifications_settings) {
             launchDialog(false);
+            return true;
+        }
+        if (id == R.id.share) {
+            sendMessageV2();
             return true;
         }
         if (id == R.id.refresh) {
@@ -421,6 +507,83 @@ public class MainActivity extends AppCompatActivity implements Observer {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    /*Whatsapp*/
+    private boolean whatsappInstalledOrNot(String uri) {
+        PackageManager pm = getPackageManager();
+        boolean app_installed = false;
+        try {
+            pm.getPackageInfo(uri, PackageManager.GET_ACTIVITIES);
+            app_installed = true;
+        } catch (PackageManager.NameNotFoundException e) {
+            app_installed = false;
+        }
+        return app_installed;
+    }
+
+    public void sendMessageV1() {
+        boolean isWhatsappInstalled = whatsappInstalledOrNot("com.whatsapp");
+        if (isWhatsappInstalled) {
+            //Uri uri = Uri.parse("smsto:" + "3409473763");
+            Intent sendIntent = new Intent();
+            sendIntent.setAction(Intent.ACTION_SEND);
+            sendIntent.putExtra(Intent.EXTRA_TEXT, "Hey Good Morning");
+            sendIntent.setType("text/plain");
+            sendIntent.setPackage("com.whatsapp");
+            startActivity(sendIntent);
+        } else {
+            Toast.makeText(this, "WhatsApp non installato",
+                    Toast.LENGTH_SHORT).show();
+            //Uri uri = Uri.parse("market://details?id=com.whatsapp");
+            //Intent goToMarket = new Intent(Intent.ACTION_VIEW, uri);
+            //startActivity(goToMarket);
+
+        }
+    }
+
+    public void sendMessageV2() {
+        boolean isWhatsappInstalled = whatsappInstalledOrNot("com.whatsapp");
+        if (isWhatsappInstalled) {
+            Uri uri = Uri.parse("smsto:" + "");
+            Intent sendIntent = new Intent(Intent.ACTION_SENDTO,uri);
+            sendIntent.setPackage("com.whatsapp");
+            startActivity(Intent.createChooser(sendIntent,""));
+        } else {
+            Toast.makeText(this, "WhatsApp non installato",
+                    Toast.LENGTH_SHORT).show();
+            //Uri uri = Uri.parse("market://details?id=com.whatsapp");
+            //Intent goToMarket = new Intent(Intent.ACTION_VIEW, uri);
+            //startActivity(goToMarket);
+
+        }
+    }
+    /*end Whatsapp*/
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        Log.d(TAG, "On prepare");
+        super.onPrepareOptionsMenu(menu);
+        enableDisableMenuItems();
+
+        return true;
+    }
+
+    public void enableDisableMenuItems(){
+        MenuItem item1 = myMenu.findItem(R.id.share);
+        MenuItem item2 = myMenu.findItem(R.id.refresh);
+        MenuItem item3 = myMenu.findItem(R.id.notifications_settings);
+
+        if (myItemShouldBeEnabled) {
+            item1.setEnabled(true);
+            item2.setEnabled(true);
+            item3.setEnabled(true);
+        } else {
+            // disabled
+            item1.setEnabled(false);
+            item2.setEnabled(false);
+            item3.setEnabled(false);
+        }
     }
 
     public void launchDialog(final boolean firstTime) {
@@ -471,7 +634,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
                                 public void onClick(DialogInterface dialog, int which,
                                                     boolean isChecked) {
                                     Log.d(TAG, "CLICK -> " + isChecked);
-                                    changed=true;
+                                    changed = true;
                                     if (isChecked) {
                                         // If the user checked the item, add it to the selected items
                                         mSelectedItems.add(which);
@@ -486,7 +649,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
                     .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int id) {
-                            if(changed) {
+                            if (changed) {
                                 if (checkedValues[0] && checkedValues[1]) {
                                     PreferenceManager.getDefaultSharedPreferences(mContext).edit()
                                             .putInt("topics", 3).apply();
@@ -507,8 +670,17 @@ public class MainActivity extends AppCompatActivity implements Observer {
                                 // User clicked OK, so save the mSelectedItems results somewhere
                                 // or return them to the component that opened the dialog
                             }
-                            changed=false;
+                            changed = false;
                             dialog.cancel();
+                            if (firstTime) {
+                                /*ShowcaseView.Builder showCaseBuilder = new ShowcaseView.Builder(main);
+
+                                showCaseBuilder.setTarget(new ViewTarget(((Toolbar) findViewById(R.id.toolbar)).getChildAt(1)));
+                                showCaseBuilder.setContentTitle("Title");
+                                showCaseBuilder.setContentText("text");
+                                showCaseBuilder.setStyle(R.style.ShowcaseView_Light);
+                                showCaseBuilder.build();*/
+                            }
 
                         }
                     })
@@ -521,8 +693,355 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
             Dialog notificationSettings = builder.create();
             notificationSettings.show();
+        if(firstTime){
 
         }
+
+        }
+
+    public ChainTourGuide mTourGuideHandler;
+    public Activity mActivity;
+    private View mButton1, mButton2, mButton3;
+    private View toolbar;
+    private Animation mEnterAnimation, mExitAnimation;
+
+    public static int OVERLAY_METHOD = 1;
+    public static int OVERLAY_LISTENER_METHOD = 2;
+
+    public static String CONTINUE_METHOD = "continue_method";
+    private int mChosenContinueMethod;
+
+    public void startTutorial(){
+
+        /*MenuItem mi=(myMenu.findItem(R.id.share));
+        mButton1 = (Toolbar)findViewById(R.id.toolbar);
+        View av=(View)MenuItemCompat.getActionView(mi);*/
+        toolbar = (Toolbar)findViewById(R.id.toolbar);
+        mButton1=(ActionMenuItemView)toolbar.findViewById(R.id.share);
+        mButton2=(ActionMenuItemView)toolbar.findViewById(R.id.refresh);
+        mButton3=(ActionMenuItemView)toolbar.findViewById(R.id.notifications_settings);
+        if(mButton1==null || mButton2==null || mButton3==null){
+            Log.d(TAG,"NO WAY");
+        }
+        else Log.d(TAG,"YESSSSSS");
+
+        Intent intent = getIntent();
+        //mChosenContinueMethod = intent.getIntExtra(CONTINUE_METHOD, OVERLAY_METHOD);
+        mChosenContinueMethod = intent.getIntExtra(CONTINUE_METHOD, OVERLAY_LISTENER_METHOD);
+
+        mActivity = this;
+
+        //setContentView(R.layout.activity_in_sequence);
+
+        /* Get 3 buttons from layout */
+        //mButton1 = (Toolbar) findViewById(R.id.toolbar);
+        //mButton2 = mButton1;
+        //mButton3 = mButton2;
+
+        /* setup enter and exit animation */
+        mEnterAnimation = new AlphaAnimation(0f, 1f);
+        mEnterAnimation.setDuration(600);
+        mEnterAnimation.setFillAfter(true);
+
+        mExitAnimation = new AlphaAnimation(1f, 0f);
+        mExitAnimation.setDuration(600);
+        mExitAnimation.setFillAfter(true);
+
+
+        if (mChosenContinueMethod == OVERLAY_METHOD) {
+            runOverlay_ContinueMethod();
+        } else if (mChosenContinueMethod == OVERLAY_LISTENER_METHOD){
+            runOverlayListener_ContinueMethod();
+        }
+        /*MenuItem ref = myMenu.getItem(0);
+        Log.d("TUTORIAL",ref.toString());
+        ImageView button = (ImageView) ref.getActionView();
+        Log.d("TUTORIAL",button.toString());*/
+        /*Toolbar tb=(Toolbar) findViewById(R.id.toolbar);
+
+        Animation animation = new TranslateAnimation(0f, 0f, 200f, 0f);
+        animation.setDuration(1000);
+        animation.setFillAfter(true);
+        animation.setInterpolator(new BounceInterpolator());
+
+        ToolTip toolTip = new ToolTip()
+                .setTitle("Next Button")
+                .setDescription("Click on Next button to proceed...")
+                .setTextColor(Color.parseColor("#bdc3c7"))
+                .setBackgroundColor(Color.parseColor("#e74c3c"))
+                .setShadow(true)
+                .setGravity(Gravity.TOP | Gravity.LEFT)
+                .setEnterAnimation(animation);
+
+        TourGuide mTourGuideHandler = TourGuide.init(this).with(TourGuide.Technique.Click)
+                .setPointer(new Pointer())
+                .setToolTip(toolTip)
+                .setOverlay(new Overlay().disableClick(true))
+                .playOn(tb);*/
+
+        /*Toolbar tb=(Toolbar) findViewById(R.id.toolbar);
+        TourGuide mTourGuideHandler = TourGuide.init(this).with(TourGuide.Technique.Click)
+                .setPointer(new Pointer())
+                .setToolTip(new ToolTip().setTitle("Benvenuto! Questo è un tutorial su come utilizzare l'app.").setDescription("Nel menu sono presenti 3 icone: \"Condividi le tue idee\", \"Refresh\" e \"Gestione notifiche\"."))
+                .setOverlay(new Overlay())
+                .playOn(tb);*/
+
+
+        /*// sequence example
+        ShowcaseConfig config = new ShowcaseConfig();
+        config.setDelay(500); // half second between each showcase view
+
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(main, "tutorial");
+
+        sequence.setConfig(config);
+
+        sequence.addSequenceItem((Button) findViewById(R.id.share),
+                "This is button one", "GOT IT");
+
+        sequence.addSequenceItem((Button)findViewById(R.id.refresh),
+                "This is button two", "GOT IT");
+
+        sequence.addSequenceItem((Button)findViewById(R.id.notifications_settings),
+                "This is button three", "GOT IT");
+
+        sequence.start();*/
+    }
+
+    private void runOverlay_ContinueMethod(){
+        // the return handler is used to manipulate the cleanup of all the tutorial elements
+        ChainTourGuide tourGuide1 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Benvenuto nella nuova app del PIG!")
+                                .setDescription("Questo è un breve tutorial su come utilizzare l'applicazione. Per passare allo step successivo, cliccare un punto qualsiasi dello schermo.")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                .setOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                                .setHoleRadius(0)
+                )
+                        // note that there is not Overlay here, so the default one will be used
+                .playLater(toolbar);
+
+        ChainTourGuide tourGuide2 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Menu")
+                                .setDescription("Nel menu sono presenti 3 icone: \"Condividi le tue idee\", \"Refresh\" e \"Gestione notifiche\".")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                .setOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                )
+                .playLater(toolbar);
+
+        ChainTourGuide tourGuide3 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Condividi le tue idee")
+                                .setDescription("Permette di comunicare direttamente con noi. Utilizzalo per inviarci pensieri, opinioni, consigli e quant'altro.")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                .setOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                )
+                .playLater(mButton1);
+
+
+        ChainTourGuide tourGuide4 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Refresh")
+                                .setDescription("Permette di aggiornare la lista degli eventi e proposte all'ultima versione online.")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                        // note that there is not Overlay here, so the default one will be used
+                .playLater(mButton2);
+
+        ChainTourGuide tourGuide5 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Gestione notifiche")
+                                .setDescription("Permette di selezionare il tipo di notifiche che si è interessati a ricevere (Biblioteca, Tesserati).")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                .setOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                )
+                .playLater(mButton3);
+
+        ChainTourGuide tourGuide6 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Navigazione")
+                                .setDescription("Per passare da una sezione all'altra dell'app, trascina la schermata a destra e sinistra.")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                .setOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                                .setHoleRadius(0)
+                )
+                .playLater(toolbar);
+
+        ChainTourGuide tourGuide7 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Fine")
+                                .setDescription("Il tutorial è finito. Cliccare il bottone in basso a destra per iniziare ad utilizzare l'app.")
+                                .setGravity(Gravity.TOP)
+                )
+                .setOverlay(new Overlay()
+                                .setHoleRadius(0)
+                                .setEnterAnimation(mEnterAnimation)
+                                /*.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Log.d("TUTORIAL","FINE");
+                        myItemShouldBeEnabled=true;
+                        enableDisableMenuItems();
+                        mTourGuideHandler.cleanUp();
+                    }
+                })*/
+                )
+                .playLater((View)fab);
+
+        Sequence sequence = new Sequence.SequenceBuilder()
+                .add(tourGuide1, tourGuide2, tourGuide3,tourGuide4,tourGuide5,tourGuide6, tourGuide7)
+                .setDefaultOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                )
+                .setDefaultPointer(null)
+                .setContinueMethod(Sequence.ContinueMethod.Overlay)
+                .build();
+
+        mTourGuideHandler = ChainTourGuide.init(this).playInSequence(sequence);
+        //mTourGuideHandler.cleanUp();
+
+        Log.d("TUTORIAL","FINE");
+    }
+
+    private void runOverlayListener_ContinueMethod(){
+        Log.d("TUTORIAL", "CLEANNNNNN");
+        ChainTourGuide tourGuide1 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Benvenuto nella nuova app del PIG!")
+                                .setDescription("Questo è un breve tutorial su come utilizzare l'applicazione. Per passare allo step successivo, cliccare un punto qualsiasi dello schermo.")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                .setOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                                .setHoleRadius(0)
+                )
+                        // note that there is not Overlay here, so the default one will be used
+                .playLater(toolbar);
+
+        ChainTourGuide tourGuide2 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Menu")
+                                .setDescription("Nel menu sono presenti 3 icone: \"Condividi le tue idee\", \"Refresh\" e \"Gestione notifiche\".")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                .setOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                )
+                .playLater(toolbar);
+
+        ChainTourGuide tourGuide3 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Condividi le tue idee")
+                                .setDescription("Permette di comunicare direttamente con noi. Utilizzalo per inviarci pensieri, opinioni, consigli e quant'altro.")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                .setOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                )
+                .playLater(mButton1);
+
+
+        ChainTourGuide tourGuide4 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Refresh")
+                                .setDescription("Permette di aggiornare la lista degli eventi e proposte all'ultima versione online.")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                        // note that there is not Overlay here, so the default one will be used
+                .playLater(mButton2);
+
+        ChainTourGuide tourGuide5 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Gestione notifiche")
+                                .setDescription("Permette di selezionare il tipo di notifiche che si è interessati a ricevere (Biblioteca, Tesserati).")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                .setOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                )
+                .playLater(mButton3);
+
+        ChainTourGuide tourGuide6 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Navigazione")
+                                .setDescription("Per passare da una sezione all'altra dell'app, trascina la schermata a destra e sinistra.")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                .setOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                                .setHoleRadius(0)
+                )
+                .playLater(toolbar);
+
+        ChainTourGuide tourGuide7 = ChainTourGuide.init(this)
+                .setToolTip(new ToolTip()
+                                .setTitle("Fine")
+                                .setDescription("Il tutorial è finito. Cliccare un punto a caso dello schermo per iniziare ad utilizzare l'app.")
+                                .setGravity(Gravity.BOTTOM)
+                )
+                .setOverlay(new Overlay()
+                                .setHoleRadius(0)
+                                .setEnterAnimation(mEnterAnimation)
+                                .setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        Log.d("TUTORIAL","FINE");
+                                        myItemShouldBeEnabled=true;
+                                        enableDisableMenuItems();
+                                        mTourGuideHandler.cleanUp();
+                                    }
+                                })
+                                /*.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Log.d("TUTORIAL","FINE");
+                        myItemShouldBeEnabled=true;
+                        enableDisableMenuItems();
+                        mTourGuideHandler.cleanUp();
+                    }
+                })*/
+                )
+                .playLater(toolbar);
+
+        Sequence sequence = new Sequence.SequenceBuilder()
+                .add(tourGuide1, tourGuide2, tourGuide3, tourGuide4, tourGuide5, tourGuide6, tourGuide7)
+                .setDefaultOverlay(new Overlay()
+                                .setEnterAnimation(mEnterAnimation)
+                                .setExitAnimation(mExitAnimation)
+                                .setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
+                                        mTourGuideHandler.next();
+                                    }
+                                })
+                )
+                .setDefaultPointer(null)
+                .setContinueMethod(Sequence.ContinueMethod.OverlayListener)
+                .build();
+
+        mTourGuideHandler = ChainTourGuide.init(this).playInSequence(sequence);
+    }
 
 
     /**
@@ -803,6 +1322,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
         ArrayList<String> ids=null;
         ArrayList<Drawable> status=null;
         TextView titleView;
+        TextView noNotificationsView;
 
         /*@Override
         public void onSaveInstanceState(Bundle icicle) {
@@ -907,6 +1427,9 @@ public class MainActivity extends AppCompatActivity implements Observer {
             for(i=0;i<pastNotifications.length();i++){
                 Log.d(TAG, "i: "+titles.get(i));
             }
+            if(pastNotifications.length()>0){
+                noNotificationsView.setVisibility(View.GONE);
+            }
             if(adapter==null) {
                 adapter = new CustomListAdapter2(getActivity(), titles, contents, dates, icons, status);
                 ListView list=(ListView)rootView.findViewById(R.id.notificationsList);
@@ -950,6 +1473,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
                                  Bundle savedInstanceState) {
             rootView = inflater.inflate(R.layout.fragment_notifications, container, false);
             titleView = (TextView) rootView.findViewById(R.id.notifications_title);
+            noNotificationsView = (TextView) rootView.findViewById(R.id.noNotifications);
             titleView.setTypeface(myFontTitle);
             setContent();
 
@@ -1136,12 +1660,11 @@ public class MainActivity extends AppCompatActivity implements Observer {
             news.setContent(news_excerpt_strings, news_images, news_links);
             notifiche.setContent();
 
-                dialog.dismiss();
-                dialog.cancel();
-
-
-
-
+            dialog.dismiss();
+            dialog.cancel();
+            if(!myItemShouldBeEnabled) {
+                startTutorial();
+            }
         }
     }
 

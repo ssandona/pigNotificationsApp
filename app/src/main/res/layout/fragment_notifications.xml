@@ -54,6 +54,17 @@
             android:layout_marginTop="15dp"
             android:paddingLeft="15dp"/>
 
+    <TextView
+        android:id="@+id/noNotifications"
+        android:text="@string/noNotifications"
+        android:layout_below="@id/notifications_title"
+        android:textSize="18dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="70dp"
+        />
+
         <ListView
             android:id="@+id/notificationsList"
             android:layout_below="@id/notifications_title"

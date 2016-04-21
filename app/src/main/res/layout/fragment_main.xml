@@ -54,6 +54,7 @@
             android:layout_marginTop="15dp"
             android:paddingLeft="15dp"
             />
+
     <!--<LinearLayout
         android:id="@+id/no_internet"
         android:layout_width="match_parent"
@@ -92,7 +93,7 @@
 
 
 
-    </RelativeLayout>
+</RelativeLayout>
 
     <!-- Version 3 -->
 <!--

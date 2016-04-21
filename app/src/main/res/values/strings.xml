@@ -18,6 +18,7 @@
     <string name="no_internet">Nessuna connessione ad Internet</string>
     <string name="retry">Riprova</string>
     <string name="notifications">Notifica</string>
+    <string name="noNotifications">Nessuna notifica ricevuta</string>
 
 
     <!-- TODO: Remove or change this placeholder text -->
