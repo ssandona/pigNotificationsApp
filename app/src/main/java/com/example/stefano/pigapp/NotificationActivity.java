@@ -29,6 +29,7 @@ import me.leolin.shortcutbadger.ShortcutBadger;
 
 public class NotificationActivity extends AppCompatActivity {
     int src=1;
+    private static Typeface myFontApp;
 
    @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +39,10 @@ public class NotificationActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-       getSupportActionBar().setTitle(R.string.notifications);
+       myFontApp=Typeface.createFromAsset(getAssets(), "fonts/Fishfingers.ttf");
+       getSupportActionBar().setDisplayShowTitleEnabled(false);
+       TextView mTitle = (TextView) toolbar.findViewById(R.id.toolbar_title);
+       mTitle.setTypeface(myFontApp);
 
         Intent intent = getIntent();
         String id = intent.getStringExtra("message");

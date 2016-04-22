@@ -120,6 +120,8 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
     private static Typeface myFontTitle;
 
+    private static Typeface myFontApp;
+
     //http://progettointercomunalegiovani.it/wp-json/wp/v2/posts?filter[category_name]=eventi&filter[posts_per_page]=2
 
 
@@ -154,6 +156,14 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        //myFontApp=Typeface.createFromAsset(getAssets(), "fonts/acmesai.ttf");
+        myFontApp=Typeface.createFromAsset(getAssets(), "fonts/FunSized.ttf");
+        myFontApp=Typeface.createFromAsset(getAssets(), "fonts/Comix_Loud.ttf");
+        myFontApp=Typeface.createFromAsset(getAssets(), "fonts/Fishfingers.ttf");
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        TextView mTitle = (TextView) toolbar.findViewById(R.id.toolbar_title);
+        mTitle.setTypeface(myFontApp);
 
         /*fab = (ButtonFloat) findViewById(R.id.buttonFloat);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -545,7 +555,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
     public void sendMessageV2() {
         boolean isWhatsappInstalled = whatsappInstalledOrNot("com.whatsapp");
         if (isWhatsappInstalled) {
-            Uri uri = Uri.parse("smsto:" + "");
+            Uri uri = Uri.parse("smsto:" + "3667360354");
             Intent sendIntent = new Intent(Intent.ACTION_SENDTO,uri);
             sendIntent.setPackage("com.whatsapp");
             startActivity(Intent.createChooser(sendIntent,""));
@@ -1129,7 +1139,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             /*TextView textView = (TextView) rootView.findViewById(R.id.proposte_content);
             textView.setText(content);*/
             titleView = (TextView) rootView.findViewById(R.id.proposte_title);
-            titleView.setTypeface(myFontTitle);
+            titleView.setTypeface(myFontApp);
 
             String[] titles2=null;
             if(savedInstanceState!=null) {
@@ -1265,7 +1275,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
                                  Bundle savedInstanceState) {
             rootView = inflater.inflate(R.layout.fragment_news, container, false);
             titleView = (TextView) rootView.findViewById(R.id.news_title);
-            titleView.setTypeface(myFontTitle);
+            titleView.setTypeface(myFontApp);
 
 
             String[] titles2=null;
@@ -1474,7 +1484,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             rootView = inflater.inflate(R.layout.fragment_notifications, container, false);
             titleView = (TextView) rootView.findViewById(R.id.notifications_title);
             noNotificationsView = (TextView) rootView.findViewById(R.id.noNotifications);
-            titleView.setTypeface(myFontTitle);
+            titleView.setTypeface(myFontApp);
             setContent();
 
 

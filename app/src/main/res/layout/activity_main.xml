@@ -38,6 +38,12 @@
             app:layout_scrollFlags="scroll|enterAlways"
             app:popupTheme="@style/AppTheme.PopupOverlay"
             >
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PIG App"
+                android:textSize="32dp"
+                android:id="@+id/toolbar_title" />
 
         </android.support.v7.widget.Toolbar>
 
