@@ -129,28 +129,6 @@ public class NotificationActivity extends AppCompatActivity {
         }
     }
 
-    /*@Override
-    public boolean onKeyDown(int keyCode, KeyEvent event)  {
-        if (Integer.parseInt(android.os.Build.VERSION.SDK) > 5
-                && keyCode == KeyEvent.KEYCODE_BACK
-                && event.getRepeatCount() == 0) {
-            Log.d("CDA", "Metodo2");
-            if(src==0){
-                Log.d("CDA", "onBackPressed Called");
-                onBackPressed();
-            }
-            else {
-                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                startActivity(intent);
-                this.finish();
-            }
-            return true;
-        }
-        Log.d("CDA", "FINIO Called");
-        //return super.onKeyDown(keyCode, event);
-        return false;
-    }*/
-
 
     @Override
     public void onBackPressed() {

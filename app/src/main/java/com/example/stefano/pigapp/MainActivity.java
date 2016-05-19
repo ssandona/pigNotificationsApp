@@ -6,31 +6,20 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
-import android.opengl.Visibility;
 import android.os.AsyncTask;
-import android.os.IBinder;
 import android.preference.PreferenceManager;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.menu.ActionMenuItemView;
 import android.support.v7.widget.Toolbar;
@@ -40,8 +29,6 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
-import android.text.Html;
-import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -52,16 +39,10 @@ import android.view.ViewGroup;
 
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
-import android.view.animation.BounceInterpolator;
-import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
-import android.widget.Scroller;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -76,49 +57,36 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.concurrent.Semaphore;
 
 import tourguide.tourguide.ChainTourGuide;
 import tourguide.tourguide.Overlay;
-import tourguide.tourguide.Pointer;
 import tourguide.tourguide.Sequence;
 import tourguide.tourguide.ToolTip;
-import tourguide.tourguide.TourGuide;
 
 public class MainActivity extends AppCompatActivity implements Observer {
-    private boolean bound = false;
-
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private static final String TAG = "MainActivity";
     private BroadcastReceiver mRegistrationBroadcastReceiver;
     ArrayList mSelectedItems;
     boolean changed=false;
     private static Context mContext;
-    private MainActivity main;
-    private static Activity activity;
     private Menu myMenu=null;
 
-    ProposteFragment proposte;
-    NewsFragment news;
-    NotificationsFragment notifiche;
+    /*3 fragments reference usefull for the population via the asynctask*/
+    static ProposteFragment proposte;
+    static NewsFragment news;
+    static NotificationsFragment notifiche;
     int cont=0;
     boolean hide=false;
 
+    /*to enable after the tutorial or in case the tutorial is was already shown*/
     boolean myItemShouldBeEnabled=false;
 
-    private static Typeface myFontTitle;
 
     private static Typeface myFontApp;
 
@@ -143,12 +111,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
     private Button fab;
 
 
-
-    /* Defined by ServiceCallbacks interface */
-    public void refreshNotifications() {
-        notifiche.refresh();
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -157,7 +119,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        //myFontApp=Typeface.createFromAsset(getAssets(), "fonts/acmesai.ttf");
         myFontApp=Typeface.createFromAsset(getAssets(), "fonts/FunSized.ttf");
         myFontApp=Typeface.createFromAsset(getAssets(), "fonts/Comix_Loud.ttf");
         myFontApp=Typeface.createFromAsset(getAssets(), "fonts/Fishfingers.ttf");
@@ -165,22 +126,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
         TextView mTitle = (TextView) toolbar.findViewById(R.id.toolbar_title);
         mTitle.setTypeface(myFontApp);
 
-        /*fab = (ButtonFloat) findViewById(R.id.buttonFloat);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Log.d("TUTORIAL","FINE");
-                myItemShouldBeEnabled=true;
-                enableDisableMenuItems();
-                if(mTourGuideHandler!=null) {
-                    mTourGuideHandler.cleanUp();
-                }
-            }
-        });*/
-
-
-
-        myFontTitle=Typeface.createFromAsset(getAssets(), "fonts/PlayfairDisplay-Bold.ttf");
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
@@ -203,7 +148,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             @Override
             public void onPageScrolled(int arg0, float arg1, int arg2) {
                 // TODO Auto-generated method stub
-                //Log.d(TAG,"SCROLLED");
+                /*Hide the fragments title during the scrolling*/
                 if (cont > 1) {
                     if (!hide) {
                         proposte.hideTitle();
@@ -221,7 +166,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             public void onPageScrollStateChanged(int arg0) {
 
                 // TODO Auto-generated method stub
-                //Log.d(TAG, "STATE CHANGED");
+                /*Show the fragments title when the fragment is stable*/
                 if (hide) {
                     proposte.showTitle();
                     news.showTitle();
@@ -233,24 +178,11 @@ public class MainActivity extends AppCompatActivity implements Observer {
             }
         });
         mContext=getApplicationContext();
-        main=this;
 
-        /*Button retry=(Button)rootView.findViewById(R.id.retry);
-        retry.setOnClickListener(new Button.OnClickListener() {
-            public void onClick(View v) {
-                //Do stuff here
-                if (isNetworkConnected()) {
-                    initializeEverything();
-                } else {
-                    Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
-                            Toast.LENGTH_LONG).show();
-                }
-            }
-        });*/
+        /*retrieve GCM token to receive notifications*/
         mRegistrationBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                //mRegistrationProgressBar.setVisibility(ProgressBar.GONE);
                 Log.d(TAG,"gone");
                 SharedPreferences sharedPreferences =
                         PreferenceManager.getDefaultSharedPreferences(context);
@@ -277,31 +209,12 @@ public class MainActivity extends AppCompatActivity implements Observer {
             Intent intent = new Intent(this, RegistrationIntentService.class);
             startService(intent);
             if (topicsSubscriptions == defaultValue) {
-                //launchDialog(true);
                 myItemShouldBeEnabled=false;
             }
             else {myItemShouldBeEnabled=true;}
         }
-        /*
-        if(isNetworkConnected()){
-            initializeEverything();
-        }
-        else{
-            Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
-                    Toast.LENGTH_LONG).show();
-            no_internet.setVisibility(View.VISIBLE);
-        }*/
+
         loadEverything();
-
-
-
-        /*if(isNetworkConnected()){
-            initializeEverything();
-        }
-        else{
-            Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
-                    Toast.LENGTH_LONG).show();
-        }*/
 
     }
 
@@ -316,11 +229,11 @@ public class MainActivity extends AppCompatActivity implements Observer {
     }
 
 
+    /*real time update of notifications*/
     @Override
     public void update(Observable observable, Object data) {
         Log.d(TAG, "NEWWWW NOTIFICATIONNNNNN");
         notifiche.setContent();
-        //Toast.makeText(this, String.valueOf("activity observer " + data), Toast.LENGTH_SHORT).show();
     }
 
 
@@ -356,48 +269,12 @@ public class MainActivity extends AppCompatActivity implements Observer {
         }
     }
 
-    /*@Override
-    protected void onPostResume (){
-        super.onPostResume();
-        Toolbar tb = (Toolbar)findViewById(R.id.toolbar);
-        mButton1=(ActionMenuItemView)tb.findViewById(R.id.share);
-        if(mButton1==null){
-            Log.d(TAG,"NO WAY");
-        }
-        else {
-            //startTutorial();
-            Log.d(TAG, "YESSSSSS");
-        }
-        startTutorial();
-    }*/
 
     private static boolean isNetworkConnected() {
         ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-
         return cm.getActiveNetworkInfo() != null;
     }
 
-/*
-    @Override
-    protected void onResume() {
-        Log.v("Example", "onResume");
-
-        String action = getIntent().getAction();
-        // Prevent endless loop by adding a unique action, don't restart if action is present
-        if(action == null || !action.equals("Already created")) {
-            Log.v("Example", "Force restart");
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
-            finish();
-        }
-        // Remove the unique action so the next time onResume is called it will restart
-        else
-            getIntent().setAction(null);
-
-        super.onResume();
-        LocalBroadcastManager.getInstance(this).registerReceiver(mRegistrationBroadcastReceiver,
-                new IntentFilter(QuickstartPreferences.REGISTRATION_COMPLETE));
-    }*/
 
     @Override
     protected void onPause() {
@@ -405,55 +282,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
         super.onPause();
     }
 
-    private void parseRSS(String result){
-        //parse JSON data
-        try {
-            int i;
-            JSONArray jArray = new JSONArray(result);
-            for(i=0; i < jArray.length(); i++) {
-
-                JSONObject jObject = jArray.getJSONObject(i);
-
-                String name = jObject.getString("name");
-                String tab1_text = jObject.getString("tab1_text");
-                int active = jObject.getInt("active");
-
-            } // End Loop
-        } catch (JSONException e) {
-            Log.e("JSONException", "Error: " + e.toString());
-        }
-    }
-
-    /*private static String retrieveRSS(String url_string){
-            String result="";
-            try {
-                URL url = new URL(url_string);
-                URLConnection urlConnection = url.openConnection();
-                urlConnection.setConnectTimeout(1000);
-                InputStream inputStream= urlConnection.getInputStream();
-                // Convert response to string using String Builder
-                try {
-                    BufferedReader bReader = new BufferedReader(new InputStreamReader(inputStream, "utf-8"), 8);
-                    StringBuilder sBuilder = new StringBuilder();
-
-                    String line = null;
-                    while ((line = bReader.readLine()) != null) {
-                        sBuilder.append(line + "\n");
-                    }
-
-                    inputStream.close();
-                    result = sBuilder.toString();
-                    Log.d(TAG,"RETRIEVE: "+result);
-
-                } catch (Exception e) {
-                    Log.d(TAG,"RETRIEVE: errore");
-                }
-            } catch (Exception ex) {
-                Log.d(TAG,"RETRIEVE ERROR: "+ex.toString());
-                return null;
-            }
-        return result;
-    }*/
 
     /**
      * Check the device to make sure it has the Google Play Services APK. If
@@ -496,7 +324,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.notifications_settings) {
-            launchDialog(false);
+            launchDialog();
             return true;
         }
         if (id == R.id.share) {
@@ -510,8 +338,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
             else{
                 Toast.makeText(mContext, (String) getResources().getString(R.string.no_internet),
                         Toast.LENGTH_LONG).show();
-            /*LinearLayout no_internet=(LinearLayout)findViewById(R.id.no_internet);
-            no_internet.setVisibility(View.VISIBLE);*/
             }
             return true;
         }
@@ -519,7 +345,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
         return super.onOptionsItemSelected(item);
     }
 
-    /*Whatsapp*/
     private boolean whatsappInstalledOrNot(String uri) {
         PackageManager pm = getPackageManager();
         boolean app_installed = false;
@@ -532,26 +357,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
         return app_installed;
     }
 
-    public void sendMessageV1() {
-        boolean isWhatsappInstalled = whatsappInstalledOrNot("com.whatsapp");
-        if (isWhatsappInstalled) {
-            //Uri uri = Uri.parse("smsto:" + "3409473763");
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(Intent.ACTION_SEND);
-            sendIntent.putExtra(Intent.EXTRA_TEXT, "Hey Good Morning");
-            sendIntent.setType("text/plain");
-            sendIntent.setPackage("com.whatsapp");
-            startActivity(sendIntent);
-        } else {
-            Toast.makeText(this, "WhatsApp non installato",
-                    Toast.LENGTH_SHORT).show();
-            //Uri uri = Uri.parse("market://details?id=com.whatsapp");
-            //Intent goToMarket = new Intent(Intent.ACTION_VIEW, uri);
-            //startActivity(goToMarket);
-
-        }
-    }
-
+    /*open whatsapp on the PIG chat*/
     public void sendMessageV2() {
         boolean isWhatsappInstalled = whatsappInstalledOrNot("com.whatsapp");
         if (isWhatsappInstalled) {
@@ -562,13 +368,10 @@ public class MainActivity extends AppCompatActivity implements Observer {
         } else {
             Toast.makeText(this, "WhatsApp non installato",
                     Toast.LENGTH_SHORT).show();
-            //Uri uri = Uri.parse("market://details?id=com.whatsapp");
-            //Intent goToMarket = new Intent(Intent.ACTION_VIEW, uri);
-            //startActivity(goToMarket);
-
         }
     }
     /*end Whatsapp*/
+
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
@@ -596,7 +399,8 @@ public class MainActivity extends AppCompatActivity implements Observer {
         }
     }
 
-    public void launchDialog(final boolean firstTime) {
+    /*open the dialog of Notifications Setting*/
+    public void launchDialog() {
 
         mSelectedItems = new ArrayList();
         final boolean[] checkedValues = new boolean[getResources().getStringArray(R.array.notifications_topics).length];
@@ -682,15 +486,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
                             }
                             changed = false;
                             dialog.cancel();
-                            if (firstTime) {
-                                /*ShowcaseView.Builder showCaseBuilder = new ShowcaseView.Builder(main);
-
-                                showCaseBuilder.setTarget(new ViewTarget(((Toolbar) findViewById(R.id.toolbar)).getChildAt(1)));
-                                showCaseBuilder.setContentTitle("Title");
-                                showCaseBuilder.setContentText("text");
-                                showCaseBuilder.setStyle(R.style.ShowcaseView_Light);
-                                showCaseBuilder.build();*/
-                            }
 
                         }
                     })
@@ -703,12 +498,11 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
             Dialog notificationSettings = builder.create();
             notificationSettings.show();
-        if(firstTime){
 
         }
 
-        }
 
+    /*Tour Guide*/
     public ChainTourGuide mTourGuideHandler;
     public Activity mActivity;
     private View mButton1, mButton2, mButton3;
@@ -723,9 +517,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
     public void startTutorial(){
 
-        /*MenuItem mi=(myMenu.findItem(R.id.share));
-        mButton1 = (Toolbar)findViewById(R.id.toolbar);
-        View av=(View)MenuItemCompat.getActionView(mi);*/
         toolbar = (Toolbar)findViewById(R.id.toolbar);
         mButton1=(ActionMenuItemView)toolbar.findViewById(R.id.share);
         mButton2=(ActionMenuItemView)toolbar.findViewById(R.id.refresh);
@@ -740,13 +531,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
         mChosenContinueMethod = intent.getIntExtra(CONTINUE_METHOD, OVERLAY_LISTENER_METHOD);
 
         mActivity = this;
-
-        //setContentView(R.layout.activity_in_sequence);
-
-        /* Get 3 buttons from layout */
-        //mButton1 = (Toolbar) findViewById(R.id.toolbar);
-        //mButton2 = mButton1;
-        //mButton3 = mButton2;
 
         /* setup enter and exit animation */
         mEnterAnimation = new AlphaAnimation(0f, 1f);
@@ -763,58 +547,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
         } else if (mChosenContinueMethod == OVERLAY_LISTENER_METHOD){
             runOverlayListener_ContinueMethod();
         }
-        /*MenuItem ref = myMenu.getItem(0);
-        Log.d("TUTORIAL",ref.toString());
-        ImageView button = (ImageView) ref.getActionView();
-        Log.d("TUTORIAL",button.toString());*/
-        /*Toolbar tb=(Toolbar) findViewById(R.id.toolbar);
-
-        Animation animation = new TranslateAnimation(0f, 0f, 200f, 0f);
-        animation.setDuration(1000);
-        animation.setFillAfter(true);
-        animation.setInterpolator(new BounceInterpolator());
-
-        ToolTip toolTip = new ToolTip()
-                .setTitle("Next Button")
-                .setDescription("Click on Next button to proceed...")
-                .setTextColor(Color.parseColor("#bdc3c7"))
-                .setBackgroundColor(Color.parseColor("#e74c3c"))
-                .setShadow(true)
-                .setGravity(Gravity.TOP | Gravity.LEFT)
-                .setEnterAnimation(animation);
-
-        TourGuide mTourGuideHandler = TourGuide.init(this).with(TourGuide.Technique.Click)
-                .setPointer(new Pointer())
-                .setToolTip(toolTip)
-                .setOverlay(new Overlay().disableClick(true))
-                .playOn(tb);*/
-
-        /*Toolbar tb=(Toolbar) findViewById(R.id.toolbar);
-        TourGuide mTourGuideHandler = TourGuide.init(this).with(TourGuide.Technique.Click)
-                .setPointer(new Pointer())
-                .setToolTip(new ToolTip().setTitle("Benvenuto! Questo è un tutorial su come utilizzare l'app.").setDescription("Nel menu sono presenti 3 icone: \"Condividi le tue idee\", \"Refresh\" e \"Gestione notifiche\"."))
-                .setOverlay(new Overlay())
-                .playOn(tb);*/
-
-
-        /*// sequence example
-        ShowcaseConfig config = new ShowcaseConfig();
-        config.setDelay(500); // half second between each showcase view
-
-        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(main, "tutorial");
-
-        sequence.setConfig(config);
-
-        sequence.addSequenceItem((Button) findViewById(R.id.share),
-                "This is button one", "GOT IT");
-
-        sequence.addSequenceItem((Button)findViewById(R.id.refresh),
-                "This is button two", "GOT IT");
-
-        sequence.addSequenceItem((Button)findViewById(R.id.notifications_settings),
-                "This is button three", "GOT IT");
-
-        sequence.start();*/
     }
 
     private void runOverlay_ContinueMethod(){
@@ -901,15 +633,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
                 .setOverlay(new Overlay()
                                 .setHoleRadius(0)
                                 .setEnterAnimation(mEnterAnimation)
-                                /*.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Log.d("TUTORIAL","FINE");
-                        myItemShouldBeEnabled=true;
-                        enableDisableMenuItems();
-                        mTourGuideHandler.cleanUp();
-                    }
-                })*/
+
                 )
                 .playLater((View)fab);
 
@@ -1022,15 +746,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
                                         mTourGuideHandler.cleanUp();
                                     }
                                 })
-                                /*.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Log.d("TUTORIAL","FINE");
-                        myItemShouldBeEnabled=true;
-                        enableDisableMenuItems();
-                        mTourGuideHandler.cleanUp();
-                    }
-                })*/
+
                 )
                 .playLater(toolbar);
 
@@ -1052,6 +768,8 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
         mTourGuideHandler = ChainTourGuide.init(this).playInSequence(sequence);
     }
+
+    /*End Tour Guide*/
 
 
     /**
@@ -1075,11 +793,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
          */
         private static final String ARG_SECTION_NUMBER = "section_number";
 
-        /*public ProposteFragment(int sectionNumber) {
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            this.setArguments(args);
-        }*/
 
         public void refresh(){
             adapter.notifyDataSetChanged();
@@ -1091,16 +804,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
         public void showTitle(){
             titleView.setVisibility(View.VISIBLE);
-        }
-
-        public void setText(String text) {
-            /*TextView t = (TextView) getView().findViewById(R.id.proposte_content);  //UPDATE
-            t.setText(Html.fromHtml(text));*/
-        }
-
-        public void setImage(Drawable d){
-            /*ImageView img=(ImageView)rootView.findViewById((R.id.proposteImage));
-            img.setImageDrawable(d);*/
         }
 
         public void setContent(String[] excerpt_strings, Drawable[] images, final String[] links){
@@ -1122,8 +825,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
                         String Slecteditem = links[+position];
                         Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Slecteditem));
                         startActivity(browserIntent);
-                        //Toast.makeText(mContext, Slecteditem, Toast.LENGTH_SHORT).show();
-
                     }
                 });
             }
@@ -1136,12 +837,10 @@ public class MainActivity extends AppCompatActivity implements Observer {
                                  Bundle savedInstanceState) {
             rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-            /*TextView textView = (TextView) rootView.findViewById(R.id.proposte_content);
-            textView.setText(content);*/
             titleView = (TextView) rootView.findViewById(R.id.proposte_title);
             titleView.setTypeface(myFontApp);
 
-            String[] titles2=null;
+            /*String[] titles2=null;
             if(savedInstanceState!=null) {
                 titles2 = savedInstanceState.getStringArray("titles");
             }
@@ -1153,51 +852,15 @@ public class MainActivity extends AppCompatActivity implements Observer {
             }
             else{
                 Log.d("PROPOSTE ELEMENTONSAVED","empty");
-            }
+            }*/
 
-
-
-
-            /*Spanned result = Html.fromHtml(formattedText);
-            view.setText(result);*/
-
-
-            //mRegistrationProgressBar = (ProgressBar) rootView.findViewById(R.id.registrationProgressBar);
-            /*mRegistrationBroadcastReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    mRegistrationProgressBar.setVisibility(ProgressBar.GONE);
-                    SharedPreferences sharedPreferences =
-                            PreferenceManager.getDefaultSharedPreferences(context);
-                    boolean sentToken = sharedPreferences
-                            .getBoolean(QuickstartPreferences.SENT_TOKEN_TO_SERVER, false);
-                    if (sentToken) {
-                        mInformationTextView.setText(getString(R.string.gcm_send_message));
-                    } else {
-                        mInformationTextView.setText(getString(R.string.token_error_message));
-                    }
-                }
-            };*/
-            //mInformationTextView = (TextView) rootView.findViewById(R.id.informationTextView);
+            Log.d("TAG","Proposte creation");
+            proposte=this;
 
             return rootView;
         }
 
-        /*@Override
-        public void onSaveInstanceState(Bundle icicle) {
-            // NEVER CALLED
-            super.onSaveInstanceState(icicle);
-            Log.d("FRAGMENTONSAVE", "on save");
-            icicle.putStringArray("titles", excerpt_strings);
-            icicle.putStringArray("links", links);
-            Bitmap[] bitmapImages=new Bitmap[images.length];
-            int i;
-            for(i=0;i<images.length;i++){
-                bitmapImages[i]=((BitmapDrawable) images[i]).getBitmap();
-            }
-            icicle.putParcelableArray("images", bitmapImages);
 
-        }*/
 
 
     }
@@ -1222,12 +885,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
          * fragment.
          */
         private static final String ARG_SECTION_NUMBER = "section_number";
-
-        /*public NewsFragment(int sectionNumber) {
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            this.setArguments(args);
-        }*/
 
         public void refresh(){
             adapter.notifyDataSetChanged();
@@ -1260,7 +917,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
                         String Slecteditem = links[+position];
                         Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(Slecteditem));
                         startActivity(browserIntent);
-                        //Toast.makeText(mContext, Slecteditem, Toast.LENGTH_SHORT).show();
 
                     }
                 });
@@ -1278,7 +934,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             titleView.setTypeface(myFontApp);
 
 
-            String[] titles2=null;
+            /*String[] titles2=null;
             if(savedInstanceState!=null) {
                 titles2 = savedInstanceState.getStringArray("titles");
             }
@@ -1290,28 +946,13 @@ public class MainActivity extends AppCompatActivity implements Observer {
             }
             else{
                 Log.d("NEWS ELEMENTONSAVED","empty");
-            }
+            }*/
+            Log.d("TAG","News creation");
+            news=this;
 
-            /*TextView textView = (TextView) rootView.findViewById(R.id.news_content);
-            textView.setText(content);*/
             return rootView;
         }
 
-        /*@Override
-        public void onSaveInstanceState(Bundle icicle) {
-            // NEVER CALLED
-            super.onSaveInstanceState(icicle);
-            Log.d("FRAGMENTONSAVE", "on save");
-            icicle.putStringArray("titles", excerpt_strings);
-            icicle.putStringArray("links", links);
-            Bitmap[] bitmapImages=new Bitmap[images.length];
-            int i;
-            for(i=0;i<images.length;i++){
-                bitmapImages[i]=((BitmapDrawable) images[i]).getBitmap();
-            }
-            icicle.putParcelableArray("images", bitmapImages);
-
-        }*/
     }
 
 
@@ -1334,34 +975,12 @@ public class MainActivity extends AppCompatActivity implements Observer {
         TextView titleView;
         TextView noNotificationsView;
 
-        /*@Override
-        public void onSaveInstanceState(Bundle icicle) {
-            // NEVER CALLED
-            super.onSaveInstanceState(icicle);
-            Log.d("FRAGMENTONSAVE", "on save");
-            icicle.putStringArrayList("titles", titles);
-            icicle.putStringArrayList("links", contents);
-            icicle.putStringArrayList("links", dates);
-            ArrayList<Bitmap> bitmapImages=new ArrayList<Bitmap>();
-            int i;
-            for(i=0;i<icons.size();i++){
-                bitmapImages.add(((BitmapDrawable) icons.get(i)).getBitmap());
-            }
-            icicle.putParcelableArrayList("images", bitmapImages);
-
-        }/*
 
         /**
          * The fragment argument representing the section number for this
          * fragment.
          */
         private static final String ARG_SECTION_NUMBER = "section_number";
-
-        /*public NotificationsFragment(int sectionNumber) {
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            this.setArguments(args);
-        }*/
 
         public void refresh(){
             adapter.notifyDataSetChanged();
@@ -1450,20 +1069,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view,
                                             int position, long id) {
-                        /*AlertDialog dialog = new AlertDialog.Builder(getActivity())
-                                .setTitle(titles.get(position))
-                                .setMessage(contents.get(position))
-                                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        dialog.dismiss();
-                                    }
-                                })
-                                .show();
-                        TextView textView = (TextView) dialog.findViewById(android.R.id.message);
-                        textView.setMaxLines(10);
-                        textView.setScroller(new Scroller(mContext));
-                        textView.setVerticalScrollBarEnabled(true);
-                        textView.setMovementMethod(new ScrollingMovementMethod());*/
+
                         Intent resultIntent = new Intent(mContext, NotificationActivity.class);
                         resultIntent.putExtra("message", ids.get(position));
                         resultIntent.putExtra("src", 0);
@@ -1488,7 +1094,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
             setContent();
 
 
-            String[] titles2=null;
+            /*String[] titles2=null;
             if(savedInstanceState!=null) {
                 titles2 = savedInstanceState.getStringArray("titles");
             }
@@ -1500,7 +1106,9 @@ public class MainActivity extends AppCompatActivity implements Observer {
             }
             else{
                 Log.d("PROPOSTE ELEMENTONSAVED","empty");
-            }
+            }*/
+            Log.d("TAG","Notifiche creation");
+            notifiche=this;
 
             return rootView;
         }
@@ -1510,15 +1118,16 @@ public class MainActivity extends AppCompatActivity implements Observer {
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
      */
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
+    public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
         }
 
+
         @Override
         public Fragment getItem(int position) {
-
+            Log.d(TAG,"PROPOSTE GET ITEM");
             switch(position)
             {
                 case 0: {proposte= new ProposteFragment();return proposte;}
@@ -1605,11 +1214,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
                                 news_links[i]=link;
                             }
 
-                            //Content
-                            /*JSONObject excerpt = jo.getJSONObject("excerpt");
-                            Log.d(TAG, "RESULT: " + excerpt.toString());
-                            String excerpt_string = excerpt.getString("rendered");
-                            Log.d(TAG, "RESULT: " + excerpt_string);*/
 
                             //Title
                             JSONObject excerpt = jo.getJSONObject("title");
@@ -1664,8 +1268,7 @@ public class MainActivity extends AppCompatActivity implements Observer {
 
         @Override
         protected void onPostExecute(String s) {
-                //proposte.setText(excerpt_string);
-                //proposte.setImage(d);
+
             proposte.setContent(proposte_excerpt_strings, proposte_images, proposte_links);
             news.setContent(news_excerpt_strings, news_images, news_links);
             notifiche.setContent();
@@ -1677,34 +1280,6 @@ public class MainActivity extends AppCompatActivity implements Observer {
             }
         }
     }
-
-    /*class RetrieveFeedTask extends AsyncTask<String, Void, RSSFeed> {
-
-        private Exception exception;
-
-        protected RSSFeed doInBackground(String... urls) {
-            try {
-                URL url= new URL(urls[0]);
-                SAXParserFactory factory =SAXParserFactory.newInstance();
-                SAXParser parser=factory.newSAXParser();
-                XMLReader xmlreader=parser.getXMLReader();
-                RssHandler theRSSHandler=new RssHandler();
-                xmlreader.setContentHandler(theRSSHandler);
-                InputSource is=new InputSource(url.openStream());
-                xmlreader.parse(is);
-                return theRSSHandler.getFeed();
-            } catch (Exception e) {
-                this.exception = e;
-                return null;
-            }
-        }
-
-        protected void onPostExecute(RSSFeed feed) {
-            // TODO: check this.exception
-            // TODO: do something with the feed
-        }
-    }
-    */
 
 
 }

@@ -124,9 +124,7 @@ public class MyGcmListenerService extends GcmListenerService {
             numberOfActualNotifications=0;
             Log.d(TAG, "Initial -1");
         }
-        /*if(numberOfActualNotifications==0){
-            notifications=new JSONArray();
-        }*/
+
         Log.d(TAG, ""+data.get("notification"));
         JSONArray pastNotifications;
 
@@ -178,17 +176,6 @@ public class MyGcmListenerService extends GcmListenerService {
             PreferenceManager.getDefaultSharedPreferences(this).edit()
                     .putString("pastNotifications",pastNotifications.toString()).apply();
 
-            //notifications.put(data.get("notification"));
-       /* String text="";
-        numberOfActualNotifications+=1;
-        if(numberOfActualNotifications>1){
-            text+=(numberOfActualNotifications+" ");
-            text+=getString(R.string.messages);
-        }
-        else{
-            text+=(numberOfActualNotifications+" ");
-            text+=getString(R.string.message);
-        }*/
 
 
 // Creates an explicit intent for an Activity in your app
@@ -244,38 +231,6 @@ public class MyGcmListenerService extends GcmListenerService {
         Intent in = new Intent("NEW_NOTIFICATION");
         sendBroadcast(in);
 
-
-
-        /*Log.d(TAG, "NOTIF NOW: " + numberOfActualNotifications);
-        SharedPreferences.Editor editor = mPrefs.edit();
-        editor.clear();
-        editor.putInt("notifications", numberOfActualNotifications);
-        editor.commit();*/
-
-        /*String message = data.getString("text");
-        Log.d(TAG, "From: " + from);
-        Log.d(TAG, "Message: " + message);
-
-        if (from.startsWith("/topics/")) {
-            // message received from some topic.
-        } else {
-            // normal downstream message.
-        }*/
-
-        // [START_EXCLUDE]
-        /**
-         * Production applications would usually process the message here.
-         * Eg: - Syncing with server.
-         *     - Store message in local database.
-         *     - Update UI.
-         */
-
-        /**
-         * In some cases it may be useful to show a notification indicating to the user
-         * that a message was received.
-         */
-        //sendNotification(message);
-        // [END_EXCLUDE]
     }
     // [END receive_message]
 

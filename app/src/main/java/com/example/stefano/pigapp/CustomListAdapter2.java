@@ -47,41 +47,15 @@ public class CustomListAdapter2 extends ArrayAdapter<String> {
         LayoutInflater inflater=mContext.getLayoutInflater();
         View rowView=rowView=inflater.inflate(R.layout.custom_list2, null, true);
 
-        /*DisplayMetrics displayMetrics = mContext.getResources().getDisplayMetrics();
-        float dpWidth = displayMetrics.widthPixels / displayMetrics.density;
-        int imageWidth=(int)(dpWidth*20)/100;
-        int titleWidth=((int)dpWidth*60)/100;
-        int textWidth=(int)(dpWidth*80)/100;
-        int dateWidth=(int)(dpWidth*20)/100;*/
 
         final ImageView imageView = (ImageView) rowView.findViewById(R.id.icon);
         final ImageView statusView = (ImageView) rowView.findViewById(R.id.status);
-        //imageView.setLayoutParams(new RelativeLayout.LayoutParams(imageWidth, RelativeLayout.LayoutParams.WRAP_CONTENT));
 
-
-        /*imageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(isImageFitToScreen) {
-                    isImageFitToScreen=false;
-                    imageView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                    imageView.setAdjustViewBounds(true);
-                }else{
-                    isImageFitToScreen=true;
-                    imageView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                    imageView.setScaleType(ImageView.ScaleType.CENTER);
-                }
-            }
-        });*/
-        Typeface myFontRegular=Typeface.createFromAsset(mContext.getAssets(),"fonts/PlayfairDisplay-Regular.ttf");
 
         TextView txtTitle = (TextView) rowView.findViewById(R.id.itemTitle);
-        //txtTitle.setLayoutParams(new RelativeLayout.LayoutParams(titleWidth, RelativeLayout.LayoutParams.WRAP_CONTENT));
         TextView txtDescription = (TextView) rowView.findViewById(R.id.itemDescription);
-        //txtDescription.setLayoutParams(new RelativeLayout.LayoutParams(textWidth, RelativeLayout.LayoutParams.WRAP_CONTENT));
         TextView txtDate = (TextView) rowView.findViewById(R.id.itemDate);
-        //txtDate.setLayoutParams(new RelativeLayout.LayoutParams(dateWidth, RelativeLayout.LayoutParams.WRAP_CONTENT));
-        //txtDescription.setTypeface(myFontRegular);
+
 
 
         txtTitle.setText(notificationsTitle.get(position));

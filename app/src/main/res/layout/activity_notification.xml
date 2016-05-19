@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    android:background="@drawable/pig_background_8"
     tools:context="com.example.stefano.pigapp.Notification">
 
     <android.support.design.widget.AppBarLayout

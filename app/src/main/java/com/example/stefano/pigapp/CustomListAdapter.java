@@ -44,24 +44,9 @@ public class CustomListAdapter extends ArrayAdapter<String> {
 
         final ImageView imageView = (ImageView) rowView.findViewById(R.id.icon);
 
-        /*imageView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(isImageFitToScreen) {
-                    isImageFitToScreen=false;
-                    imageView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                    imageView.setAdjustViewBounds(true);
-                }else{
-                    isImageFitToScreen=true;
-                    imageView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                    imageView.setScaleType(ImageView.ScaleType.CENTER);
-                }
-            }
-        });*/
-        Typeface myFontRegular=Typeface.createFromAsset(mContext.getAssets(),"fonts/PlayfairDisplay-Regular.ttf");
+
 
         TextView txtDescription = (TextView) rowView.findViewById(R.id.itemDescription);
-        //txtDescription.setTypeface(myFontRegular);
 
         if(small){
             imageView.getLayoutParams().height = 100;
